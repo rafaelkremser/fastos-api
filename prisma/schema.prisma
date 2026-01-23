@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// TENANT & AUTH
+// ============================================
+
+model Tenant {
+  id        String    @id @default(uuid())
+  name      String
+  document  String?
+  email     String    @unique
+  phone     String?
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  users         User[]
+  customers     Customer[]
+  devices       Device[]
+  serviceOrders ServiceOrder[]
+
+  @@map("tenants")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  TECHNICIAN
+  RECEPTIONIST
+}
+
+model User {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  name      String
+  email     String
+  password  String
+  role      UserRole  @default(TECHNICIAN)
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  tenant              Tenant                @relation(fields: [tenantId], references: [id])
+  assignedOrders      ServiceOrder[]        @relation("AssignedTechnician")
+  createdOrders       ServiceOrder[]        @relation("CreatedBy")
+  serviceOrderHistory ServiceOrderHistory[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+// ============================================
+// CUSTOMERS & DEVICES
+// ============================================
+
+model Customer {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  name          String
+  document      String?
+  email         String?
+  phone         String
+  phone2        String?   @map("phone_2")
+  address       String?
+  addressNumber String?   @map("address_number")
+  complement    String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  zipCode       String?   @map("zip_code")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  devices       Device[]
+  serviceOrders ServiceOrder[]
+
+  @@index([tenantId, phone])
+  @@index([tenantId, name])
+  @@map("customers")
+}
+
+model Device {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  customerId   String    @map("customer_id")
+  type         String
+  brand        String?
+  model        String?
+  serialNumber String?   @map("serial_number")
+  imei         String?
+  color        String?
+  condition    String?
+  accessories  String?
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  customer      Customer       @relation(fields: [customerId], references: [id])
+  serviceOrders ServiceOrder[]
+
+  @@index([tenantId, customerId])
+  @@map("devices")
+}
+
+// ============================================
+// SERVICE ORDERS
+// ============================================
+
+enum OrderStatus {
+  OPEN
+  IN_ANALYSIS
+  WAITING_APPROVAL
+  APPROVED
+  IN_PROGRESS
+  WAITING_PARTS
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model ServiceOrder {
+  id                 String        @id @default(uuid())
+  tenantId           String        @map("tenant_id")
+  customerId         String        @map("customer_id")
+  deviceId           String        @map("device_id")
+  number             Int
+  status             OrderStatus   @default(OPEN)
+  priority           OrderPriority @default(NORMAL)
+  technicianId       String?       @map("technician_id")
+  createdById        String        @map("created_by_id")
+  problemDescription String        @map("problem_description")
+  diagnosis          String?
+  solution           String?
+  entryDate          DateTime      @default(now()) @map("entry_date")
+  estimatedDate      DateTime?     @map("estimated_date")
+  completedDate      DateTime?     @map("completed_date")
+  deliveredDate      DateTime?     @map("delivered_date")
+  estimatedCost      Decimal?      @map("estimated_cost") @db.Decimal(10, 2)
+  finalCost          Decimal?      @map("final_cost") @db.Decimal(10, 2)
+  discount           Decimal?      @default(0) @db.Decimal(10, 2)
+  internalNotes      String?       @map("internal_notes")
+  customerNotes      String?       @map("customer_notes")
+  warrantyDays       Int?          @default(90) @map("warranty_days")
+  warrantyUntil      DateTime?     @map("warranty_until")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime?     @updatedAt @map("updated_at")
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  customer   Customer              @relation(fields: [customerId], references: [id])
+  device     Device                @relation(fields: [deviceId], references: [id])
+  technician User?                 @relation("AssignedTechnician", fields: [technicianId], references: [id])
+  createdBy  User                  @relation("CreatedBy", fields: [createdById], references: [id])
+  items      ServiceOrderItem[]
+  history    ServiceOrderHistory[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@map("service_orders")
+}
+
+enum ItemType {
+  SERVICE
+  PART
+  OTHER
+}
+
+model ServiceOrderItem {
+  id             String   @id @default(uuid())
+  serviceOrderId String   @map("service_order_id")
+  type           ItemType
+  description    String
+  quantity       Int      @default(1)
+  unitPrice      Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice     Decimal  @map("total_price") @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@map("service_order_items")
+}
+
+model ServiceOrderHistory {
+  id             String   @id @default(uuid())
+  serviceOrderId String   @map("service_order_id")
+  userId         String?  @map("user_id")
+  action         String
+  description    String
+  oldValue       String?  @map("old_value")
+  newValue       String?  @map("new_value")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([serviceOrderId, createdAt])
+  @@map("service_order_history")
+}

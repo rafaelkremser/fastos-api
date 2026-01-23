@@ -1,0 +1,291 @@
+### Variáveis
+@baseUrl = http://localhost:3333
+@token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZTNkNjQ0Ny02MzhkLTQ4NzMtOWY0NS0wMDMxZjVmZGYwZDUiLCJ0ZW5hbnRJZCI6IjdiMmFmOGFmLTQ0ZjktNDc3OC04NmJjLWE4NDYxM2QzMDk5MyIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc2OTEzNDM0NywiZXhwIjoxNzY5NzM5MTQ3fQ.ho1oPBTmj0kttqBpGdQ55yqMd9jFIGx4nmfhBbAF07crBBMICfFd3gulWaMHxBpGz8Dt8OuYQUrGpvjFgO9eeYWbndwDNDZdoyUeRwTdo1-m6wd9eyD-ZwdXKEwJPntKaINnbxVQ66BzPD8M2Ren_4s_3X5IA87toY-l7AThazViEfVqv41QyGgWFzxd8SNT4pyH3x_22DSJx-4BYQjM7_jC7Y1hvGTZ4rBZJgBcnwh-2U6U5BOLz88ss7F-UIyvQLGeJWVGxV5y7OU5H8nTf1bkwreovVE06guGLJKInPFswi3FthB-0NRD794hyrYbM6cyta9OR5StwwKqFFkPbg
+
+### ========================================
+### AUTH - Autenticação
+### ========================================
+
+### 1. Registrar novo tenant (conta + usuário OWNER)
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "tenantName": "Assistência Tech",
+  "tenantEmail": "contato@assistenciatech.com",
+  "ownerName": "John Doe",
+  "ownerEmail": "john.doe@example.com",
+  "ownerPassword": "senha123",
+  "tenantDocument": "1234567890",
+  "tenantPhone": "1234567890"
+}
+
+### 2. Login (autenticar usuário)
+POST {{baseUrl}}/sessions
+Content-Type: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "senha123"
+}
+
+### ========================================
+### USERS - Usuários
+### ========================================
+
+### 3. Criar usuário (requer autenticação)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Maria Santos",
+  "email": "maria@assistenciatech.com",
+  "password": "senha123",
+  "role": "TECHNICIAN"
+}
+
+### ========================================
+### CUSTOMERS - Clientes
+### ========================================
+
+### 4. Criar cliente
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Carlos Pereira",
+  "phone": "11988887777",
+  "email": "carlos@email.com",
+  "document": "123.456.789-00",
+  "address": "Rua das Flores",
+  "addressNumber": "456",
+  "neighborhood": "Centro",
+  "city": "São Paulo",
+  "state": "SP",
+  "zipCode": "01234-567",
+  "notes": "Cliente preferencial"
+}
+
+### 5. Listar clientes
+GET {{baseUrl}}/customers?page=1
+Authorization: Bearer {{token}}
+
+### 6. Buscar clientes por nome
+GET {{baseUrl}}/customers?page=1&search=carlos
+Authorization: Bearer {{token}}
+
+### 7. Buscar cliente por ID
+GET {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{token}}
+
+### 8. Atualizar cliente
+PUT {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Carlos Pereira Silva",
+  "phone": "11977776666",
+  "email": "carlos.novo@email.com",
+  "document": "123.456.789-00",
+  "address": "Rua das Flores",
+  "addressNumber": "456",
+  "neighborhood": "Centro",
+  "city": "São Paulo",
+  "state": "SP",
+  "zipCode": "01234-567",
+  "notes": "Cliente VIP"
+}
+
+### 9. Excluir cliente
+DELETE {{baseUrl}}/customers/{{customerId}}
+Authorization: Bearer {{token}}
+
+### ========================================
+### DEVICES - Aparelhos
+### ========================================
+
+### 10. Criar aparelho
+POST {{baseUrl}}/devices
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "type": "Celular",
+  "brand": "Samsung",
+  "model": "Galaxy S21",
+  "color": "Preto",
+  "serialNumber": "SN123456789",
+  "imei": "123456789012345",
+  "condition": "Tela trincada, bateria viciada",
+  "accessories": "Carregador, capa",
+  "notes": "Aparelho ainda ligado"
+}
+
+### 11. Listar aparelhos do cliente
+GET {{baseUrl}}/customers/{{customerId}}/devices?page=1
+Authorization: Bearer {{token}}
+
+### 12. Atualizar aparelho
+PUT {{baseUrl}}/devices/{{deviceId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Celular",
+  "brand": "Samsung",
+  "model": "Galaxy S21 Ultra",
+  "color": "Preto",
+  "serialNumber": "SN123456789",
+  "imei": "123456789012345",
+  "condition": "Tela e bateria danificados",
+  "accessories": "Carregador, capa, fone",
+  "notes": "Aparelho desligado"
+}
+
+### 13. Excluir aparelho
+DELETE {{baseUrl}}/devices/{{deviceId}}
+Authorization: Bearer {{token}}
+
+### ========================================
+### SERVICE ORDERS - Ordens de Serviço
+### ========================================
+
+### 14. Criar ordem de serviço
+POST {{baseUrl}}/service-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "deviceId": "{{deviceId}}",
+  "problemDescription": "Tela não liga e bateria descarrega muito rápido. Cliente relata que aparelho caiu na água.",
+  "priority": "HIGH",
+  "estimatedDate": "2026-02-15T10:00:00Z",
+  "internalNotes": "Verificar placa mãe e conectores"
+}
+
+### 15. Listar ordens de serviço
+GET {{baseUrl}}/service-orders?page=1
+Authorization: Bearer {{token}}
+
+### 16. Filtrar ordens por status
+GET {{baseUrl}}/service-orders?page=1&status=OPEN
+Authorization: Bearer {{token}}
+
+### 17. Filtrar ordens por técnico
+GET {{baseUrl}}/service-orders?page=1&technicianId={{technicianId}}
+Authorization: Bearer {{token}}
+
+### 18. Buscar ordem por ID
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}
+Authorization: Bearer {{token}}
+
+### 19. Editar ordem de serviço
+PUT {{baseUrl}}/service-orders/{{serviceOrderId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "problemDescription": "Tela não liga, bateria descarrega rápido e alto-falante com chiado",
+  "diagnosis": "Conector de tela danificado, bateria viciada, alto-falante queimado",
+  "solution": "Substituição do display, bateria e alto-falante",
+  "priority": "URGENT",
+  "estimatedCost": 450.00,
+  "finalCost": 420.00,
+  "discount": 20.00,
+  "internalNotes": "Peças originais disponíveis",
+  "customerNotes": "Entrega prevista para sexta-feira"
+}
+
+### 20. Alterar status da ordem
+PATCH {{baseUrl}}/service-orders/{{serviceOrderId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS",
+  "notes": "Iniciando reparo - aguardando peças"
+}
+
+### Status disponíveis:
+# OPEN - Aberta (padrão)
+# IN_ANALYSIS - Em análise
+# WAITING_APPROVAL - Aguardando aprovação do orçamento
+# APPROVED - Orçamento aprovado
+# IN_PROGRESS - Em andamento
+# WAITING_PARTS - Aguardando peças
+# COMPLETED - Finalizada
+# DELIVERED - Entregue
+# CANCELLED - Cancelada
+
+### 21. Atribuir técnico à ordem
+PATCH {{baseUrl}}/service-orders/{{serviceOrderId}}/technician
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "technicianId": "{{technicianId}}"
+}
+
+### 22. Adicionar item (peça) à ordem
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "PART",
+  "description": "Display LCD Original Samsung S21",
+  "quantity": 1,
+  "unitPrice": 250.00
+}
+
+### 23. Adicionar item (serviço) à ordem
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "SERVICE",
+  "description": "Mão de obra - Troca de display",
+  "quantity": 1,
+  "unitPrice": 100.00
+}
+
+### 24. Adicionar item (outro) à ordem
+POST {{baseUrl}}/service-orders/{{serviceOrderId}}/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "OTHER",
+  "description": "Taxa de urgência",
+  "quantity": 1,
+  "unitPrice": 50.00
+}
+
+### 25. Remover item da ordem
+DELETE {{baseUrl}}/service-orders/{{serviceOrderId}}/items/{{itemId}}
+Authorization: Bearer {{token}}
+
+### 26. Ver histórico da ordem
+GET {{baseUrl}}/service-orders/{{serviceOrderId}}/history?page=1
+Authorization: Bearer {{token}}
+
+### ========================================
+### FLUXO COMPLETO DE TESTE
+### ========================================
+
+### Execute na ordem:
+### 1. POST /accounts -> Criar conta (anota o token)
+### 2. POST /sessions -> Fazer login (pega o token)
+### 3. Copie o token e cole na variável @token acima
+### 4. POST /customers -> Criar cliente (anota o customerId)
+### 5. POST /devices -> Criar aparelho com o customerId
+### 6. POST /service-orders -> Criar OS com customerId e deviceId
+### 7. PATCH /service-orders/:id/status -> Alterar status
+### 8. POST /service-orders/:id/items -> Adicionar itens
+### 9. GET /service-orders/:id/history -> Ver histórico
