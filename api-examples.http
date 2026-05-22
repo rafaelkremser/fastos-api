@@ -1,6 +1,10 @@
 ### Variáveis
-@baseUrl = http://localhost:3333
-@token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZTNkNjQ0Ny02MzhkLTQ4NzMtOWY0NS0wMDMxZjVmZGYwZDUiLCJ0ZW5hbnRJZCI6IjdiMmFmOGFmLTQ0ZjktNDc3OC04NmJjLWE4NDYxM2QzMDk5MyIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc2OTEzNDM0NywiZXhwIjoxNzY5NzM5MTQ3fQ.ho1oPBTmj0kttqBpGdQ55yqMd9jFIGx4nmfhBbAF07crBBMICfFd3gulWaMHxBpGz8Dt8OuYQUrGpvjFgO9eeYWbndwDNDZdoyUeRwTdo1-m6wd9eyD-ZwdXKEwJPntKaINnbxVQ66BzPD8M2Ren_4s_3X5IA87toY-l7AThazViEfVqv41QyGgWFzxd8SNT4pyH3x_22DSJx-4BYQjM7_jC7Y1hvGTZ4rBZJgBcnwh-2U6U5BOLz88ss7F-UIyvQLGeJWVGxV5y7OU5H8nTf1bkwreovVE06guGLJKInPFswi3FthB-0NRD794hyrYbM6cyta9OR5StwwKqFFkPbg
+@baseUrl = http://localhost:3000
+@token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZTNkNjQ0Ny02MzhkLTQ4NzMtOWY0NS0wMDMxZjVmZGYwZDUiLCJ0ZW5hbnRJZCI6IjdiMmFmOGFmLTQ0ZjktNDc3OC04NmJjLWE4NDYxM2QzMDk5MyIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc2OTM5MDkxMCwiZXhwIjoxNzY5OTk1NzEwfQ.o-za2PrxUZA0cncqIR7N5D1Cv7qgGfvppQT3_cBi1HWYF-ZvG7M2WivrO-0iX8bSyTamOrgKEVNrawKSAtZm9V9HJmZdjLdGYWqpt7UKEZKN7xV8PElkFjDSPNtD7NWFtDY8iNMzsgWu-TDOiBqzi4lTkPaYnWCSkJv-Fef-WYzAYNbyl_RzcOy2bDeBxKXiyEjrjUNCliZ6FkCy7RL4sTVFqO0x74FsQdEfZQwmvbN48oc2ICuXK-j8FcORQYV9uzpTDi4ccO6SdQOb89jhW_etLzsUyBmOg5Md29a2cerV9MCXZNsXD5xPDT014nTAIuVNd9cwVsmMTfZmYmJqTw
+@customerId = 455b976c-3241-4efa-93d7-e5afe73684b4
+@deviceId = 76a10d37-ae7d-44f5-8d21-f33319094b55
+@technicianId = e2d0ed25-6d65-4dcd-adc7-f127f7aebbfe
+@serviceOrderId = dea0d097-3474-4deb-9960-f4a07c52378a
 
 ### ========================================
 ### AUTH - Autenticação
@@ -21,7 +25,7 @@ Content-Type: application/json
 }
 
 ### 2. Login (autenticar usuário)
-POST {{baseUrl}}/sessions
+POST {{baseUrl}}/authenticate
 Content-Type: application/json
 
 {
@@ -39,8 +43,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Maria Santos",
-  "email": "maria@assistenciatech.com",
+  "name": "José Santos",
+  "email": "jose@assistenciatech.com",
   "password": "senha123",
   "role": "TECHNICIAN"
 }

@@ -6,6 +6,8 @@ import { CryptographyModule } from '../cryptography/cryptography.module'
 import { CreateAccountController } from './controllers/create-account.controller'
 import { AuthenticateController } from './controllers/authenticate.controller'
 import { CreateUserController } from './controllers/create-user.controller'
+import { GetUserController } from './controllers/get-user.controller'
+import { GetTenantController } from './controllers/get-tenant.controller'
 
 // Customer Controllers
 import { CreateCustomerController } from './controllers/create-customer.controller'
@@ -35,6 +37,8 @@ import { FetchServiceOrderHistoryController } from './controllers/fetch-service-
 import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/register-tenant'
 import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/authenticate-user'
 import { CreateUserUseCase } from '@/domain/account/application/use-cases/create-user'
+import { GetUserUseCase } from '@/domain/account/application/use-cases/get-user'
+import { GetTenantUseCase } from '@/domain/account/application/use-cases/get-tenant'
 
 // Customer Use Cases
 import { CreateCustomerUseCase } from '@/domain/customer/application/use-cases/create-customer'
@@ -67,6 +71,8 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     CreateAccountController,
     AuthenticateController,
     CreateUserController,
+    GetUserController,
+    GetTenantController,
     // Customer
     CreateCustomerController,
     EditCustomerController,
@@ -94,6 +100,8 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     RegisterTenantUseCase,
     AuthenticateUserUseCase,
     CreateUserUseCase,
+    GetUserUseCase,
+    GetTenantUseCase,
     // Customer Use Cases
     CreateCustomerUseCase,
     EditCustomerUseCase,

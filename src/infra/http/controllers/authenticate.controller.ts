@@ -21,7 +21,7 @@ const bodyValidationPipe = new ZodValidationPipe(authenticateBodySchema)
 
 type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 
-@Controller('/sessions')
+@Controller('/authenticate')
 @Public()
 export class AuthenticateController {
   constructor(private authenticateUser: AuthenticateUserUseCase) {}

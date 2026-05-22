@@ -31,8 +31,6 @@ export class AuthenticateUserUseCase {
   }: AuthenticateUserUseCaseRequest): Promise<AuthenticateUserUseCaseResponse> {
     const user = await this.usersRepository.findByEmailGlobal(email)
 
-    console.log('user', user)
-
     if (!user) {
       return left(new WrongCredentialsError())
     }
