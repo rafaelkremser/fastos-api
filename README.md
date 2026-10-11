@@ -21,23 +21,19 @@ npm install
 
 ### 2. Configurar variáveis de ambiente
 
-Copie o arquivo `.env.example` para `.env` e configure as variáveis:
+Copie o arquivo `.env.example` para `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` com suas configurações:
+O JWT usa RS256 (chaves RSA assimétricas). Gere um par novo com:
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/fastos_db?schema=public"
-JWT_SECRET="sua-chave-secreta-muito-segura"
-JWT_EXPIRES_IN="15m"
-JWT_REFRESH_SECRET="outra-chave-secreta-para-refresh"
-JWT_REFRESH_EXPIRES_IN="7d"
-PORT=3000
-NODE_ENV=development
+```bash
+npm run gen:keys
 ```
+
+Copie a saída (duas linhas `JWT_PRIVATE_KEY=...` e `JWT_PUBLIC_KEY=...`) e cole no `.env`, substituindo os campos vazios. Ajuste `DATABASE_URL` para o seu Postgres. `PORT` fica em `3333` por padrão.
 
 ### 3. Configurar banco de dados PostgreSQL
 
@@ -62,14 +58,14 @@ npm run prisma:migrate
 ### Desenvolvimento
 
 ```bash
-npm run start:dev
+npm run dev
 ```
 
-A aplicação estará disponível em `http://localhost:3000`
+A aplicação estará disponível em `http://localhost:3333`
 
 ### Documentação Swagger
 
-Acesse `http://localhost:3000/api/docs` para visualizar a documentação interativa da API.
+Acesse `http://localhost:3333/api/docs` para visualizar a documentação interativa da API.
 
 ### Prisma Studio
 
