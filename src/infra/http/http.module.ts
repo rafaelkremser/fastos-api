@@ -20,6 +20,7 @@ import { FetchCustomersController } from './controllers/fetch-customers.controll
 import { CreateDeviceController } from './controllers/create-device.controller'
 import { EditDeviceController } from './controllers/edit-device.controller'
 import { DeleteDeviceController } from './controllers/delete-device.controller'
+import { GetDeviceController } from './controllers/get-device.controller'
 import { FetchDevicesByCustomerController } from './controllers/fetch-devices-by-customer.controller'
 
 // ServiceOrder Controllers
@@ -51,6 +52,7 @@ import { FetchCustomersUseCase } from '@/domain/customer/application/use-cases/f
 import { CreateDeviceUseCase } from '@/domain/device/application/use-cases/create-device'
 import { EditDeviceUseCase } from '@/domain/device/application/use-cases/edit-device'
 import { DeleteDeviceUseCase } from '@/domain/device/application/use-cases/delete-device'
+import { GetDeviceUseCase } from '@/domain/device/application/use-cases/get-device'
 import { FetchDevicesByCustomerUseCase } from '@/domain/device/application/use-cases/fetch-devices-by-customer'
 
 // ServiceOrder Use Cases
@@ -83,6 +85,7 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     CreateDeviceController,
     EditDeviceController,
     DeleteDeviceController,
+    GetDeviceController,
     FetchDevicesByCustomerController,
     // ServiceOrder
     CreateServiceOrderController,
@@ -112,6 +115,7 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     CreateDeviceUseCase,
     EditDeviceUseCase,
     DeleteDeviceUseCase,
+    GetDeviceUseCase,
     FetchDevicesByCustomerUseCase,
     // ServiceOrder Use Cases
     CreateServiceOrderUseCase,

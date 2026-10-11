@@ -6,6 +6,7 @@ import {
   HttpCode,
   Post,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
@@ -25,6 +26,8 @@ const bodyValidationPipe = new ZodValidationPipe(createUserBodySchema)
 
 type CreateUserBodySchema = z.infer<typeof createUserBodySchema>
 
+@ApiTags('Account')
+@ApiBearerAuth()
 @Controller('/users')
 export class CreateUserController {
   constructor(private createUser: CreateUserUseCase) {}

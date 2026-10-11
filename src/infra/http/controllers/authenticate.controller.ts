@@ -6,6 +6,7 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { Public } from '@/infra/auth/public'
@@ -21,6 +22,7 @@ const bodyValidationPipe = new ZodValidationPipe(authenticateBodySchema)
 
 type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 
+@ApiTags('Account')
 @Controller('/authenticate')
 @Public()
 export class AuthenticateController {

@@ -6,6 +6,7 @@ import {
   NotFoundException,
   Post,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
@@ -31,6 +32,8 @@ const bodyValidationPipe = new ZodValidationPipe(createDeviceBodySchema)
 
 type CreateDeviceBodySchema = z.infer<typeof createDeviceBodySchema>
 
+@ApiTags('Devices')
+@ApiBearerAuth()
 @Controller('/devices')
 export class CreateDeviceController {
   constructor(private createDevice: CreateDeviceUseCase) {}

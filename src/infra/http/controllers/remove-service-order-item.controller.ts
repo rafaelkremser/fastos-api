@@ -7,12 +7,15 @@ import {
   NotFoundException,
   Param,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { RemoveServiceOrderItemUseCase } from '@/domain/service-order/application/use-cases/remove-service-order-item'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 
+@ApiTags('Service Orders')
+@ApiBearerAuth()
 @Controller('/service-orders/:serviceOrderId/items/:itemId')
 export class RemoveServiceOrderItemController {
   constructor(private removeServiceOrderItem: RemoveServiceOrderItemUseCase) {}

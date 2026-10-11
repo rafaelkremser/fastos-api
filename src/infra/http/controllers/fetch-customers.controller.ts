@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
@@ -17,6 +18,8 @@ const queryValidationPipe = new ZodValidationPipe(pageQueryParamSchema)
 
 type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
+@ApiTags('Customers')
+@ApiBearerAuth()
 @Controller('/customers')
 export class FetchCustomersController {
   constructor(private fetchCustomers: FetchCustomersUseCase) {}

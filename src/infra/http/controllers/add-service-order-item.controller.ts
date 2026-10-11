@@ -8,6 +8,7 @@ import {
   Param,
   Post,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
@@ -28,6 +29,8 @@ const bodyValidationPipe = new ZodValidationPipe(addItemBodySchema)
 
 type AddItemBodySchema = z.infer<typeof addItemBodySchema>
 
+@ApiTags('Service Orders')
+@ApiBearerAuth()
 @Controller('/service-orders/:id/items')
 export class AddServiceOrderItemController {
   constructor(private addServiceOrderItem: AddServiceOrderItemUseCase) {}

@@ -1,15 +1,18 @@
 import {
-    BadRequestException,
+  BadRequestException,
   Controller,
   Get,
   NotFoundException,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { GetUserUseCase } from '@/domain/account/application/use-cases/get-user'
 import { UserPresenter } from '../presenters/user-presenter'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 
+@ApiTags('Account')
+@ApiBearerAuth()
 @Controller('/user')
 export class GetUserController {
   constructor(private getUser: GetUserUseCase) {}

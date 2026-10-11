@@ -7,12 +7,15 @@ import {
   NotFoundException,
   Param,
 } from '@nestjs/common'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { DeleteCustomerUseCase } from '@/domain/customer/application/use-cases/delete-customer'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 
+@ApiTags('Customers')
+@ApiBearerAuth()
 @Controller('/customers/:id')
 export class DeleteCustomerController {
   constructor(private deleteCustomer: DeleteCustomerUseCase) {}
