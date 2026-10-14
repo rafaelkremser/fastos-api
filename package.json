@@ -24,6 +24,8 @@
     "gen:keys": "node scripts/generate-jwt-keys.mjs"
   },
   "dependencies": {
+    "@neon/config": "^1.9.1",
+    "@neon/env": "^1.6.2",
     "@nestjs/common": "^11.1.12",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.12",

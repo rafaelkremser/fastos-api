@@ -49,3 +49,4 @@ public.txt
 # Claude Code
 .claude/
 prompt-claude.md
+.neon

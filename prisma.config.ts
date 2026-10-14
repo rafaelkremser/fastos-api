@@ -6,7 +6,8 @@ export default defineConfig({
   migrations: {
     path: 'prisma/migrations',
   },
+  // Migrations need a direct connection; Neon's pooled URL (PgBouncer, transaction mode) breaks Prisma Migrate.
   datasource: {
-    url: env('DATABASE_URL'),
+    url: env('DATABASE_URL_UNPOOLED'),
   },
 })
