@@ -1,9 +1,11 @@
 import { Entity } from '@/core/entities/entity'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
+import { Slug } from './value-objects/slug'
 
 export interface TenantProps {
   name: string
+  slug: Slug
   document: string | null
   email: string
   phone: string | null
@@ -15,6 +17,10 @@ export interface TenantProps {
 export class Tenant extends Entity<TenantProps> {
   get name() {
     return this.props.name
+  }
+
+  get slug() {
+    return this.props.slug
   }
 
   get document() {

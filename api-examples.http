@@ -1,5 +1,5 @@
 ### Variáveis
-@baseUrl = http://localhost:3000
+@baseUrl = http://localhost:3333
 @token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZTNkNjQ0Ny02MzhkLTQ4NzMtOWY0NS0wMDMxZjVmZGYwZDUiLCJ0ZW5hbnRJZCI6IjdiMmFmOGFmLTQ0ZjktNDc3OC04NmJjLWE4NDYxM2QzMDk5MyIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc2OTM5MDkxMCwiZXhwIjoxNzY5OTk1NzEwfQ.o-za2PrxUZA0cncqIR7N5D1Cv7qgGfvppQT3_cBi1HWYF-ZvG7M2WivrO-0iX8bSyTamOrgKEVNrawKSAtZm9V9HJmZdjLdGYWqpt7UKEZKN7xV8PElkFjDSPNtD7NWFtDY8iNMzsgWu-TDOiBqzi4lTkPaYnWCSkJv-Fef-WYzAYNbyl_RzcOy2bDeBxKXiyEjrjUNCliZ6FkCy7RL4sTVFqO0x74FsQdEfZQwmvbN48oc2ICuXK-j8FcORQYV9uzpTDi4ccO6SdQOb89jhW_etLzsUyBmOg5Md29a2cerV9MCXZNsXD5xPDT014nTAIuVNd9cwVsmMTfZmYmJqTw
 @customerId = 455b976c-3241-4efa-93d7-e5afe73684b4
 @deviceId = 76a10d37-ae7d-44f5-8d21-f33319094b55
@@ -11,12 +11,14 @@
 ### ========================================
 
 ### 1. Registrar novo tenant (conta + usuário OWNER)
+### tenantSlug é opcional: se omitido, é gerado do nome ("assistencia-tech")
 POST {{baseUrl}}/accounts
 Content-Type: application/json
 
 {
   "tenantName": "Assistência Tech",
   "tenantEmail": "contato@assistenciatech.com",
+  "tenantSlug": "assistencia-tech",
   "ownerName": "John Doe",
   "ownerEmail": "john.doe@example.com",
   "ownerPassword": "senha123",
@@ -25,10 +27,12 @@ Content-Type: application/json
 }
 
 ### 2. Login (autenticar usuário)
+### tenantSlug é o subdomínio da assistência (assistencia-tech.fastos.com)
 POST {{baseUrl}}/authenticate
 Content-Type: application/json
 
 {
+  "tenantSlug": "assistencia-tech",
   "email": "john.doe@example.com",
   "password": "senha123"
 }
@@ -285,7 +289,7 @@ Authorization: Bearer {{token}}
 
 ### Execute na ordem:
 ### 1. POST /accounts -> Criar conta (anota o token)
-### 2. POST /sessions -> Fazer login (pega o token)
+### 2. POST /authenticate -> Fazer login com tenantSlug (pega o token)
 ### 3. Copie o token e cole na variável @token acima
 ### 4. POST /customers -> Criar cliente (anota o customerId)
 ### 5. POST /devices -> Criar aparelho com o customerId

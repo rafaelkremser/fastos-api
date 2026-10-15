@@ -2,15 +2,18 @@ import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
 import { Tenant } from '../../enterprise/entities/tenant'
 import { User } from '../../enterprise/entities/user'
+import { Slug } from '../../enterprise/entities/value-objects/slug'
 import { TenantsRepository } from '../repositories/tenants-repository'
 import { UsersRepository } from '../repositories/users-repository'
 import { Hasher } from '../cryptography/hasher'
 import { TenantAlreadyExistsError } from './errors/tenant-already-exists-error'
-import { UserAlreadyExistsError } from './errors/user-already-exists-error'
+import { InvalidTenantSlugError } from './errors/invalid-tenant-slug-error'
+import { TenantSlugAlreadyInUseError } from './errors/tenant-slug-already-in-use-error'
 
 interface RegisterTenantUseCaseRequest {
   tenantName: string
   tenantEmail: string
+  tenantSlug?: string | null
   tenantDocument?: string | null
   tenantPhone?: string | null
   ownerName: string
@@ -19,7 +22,9 @@ interface RegisterTenantUseCaseRequest {
 }
 
 type RegisterTenantUseCaseResponse = Either<
-  TenantAlreadyExistsError | UserAlreadyExistsError,
+  | TenantAlreadyExistsError
+  | InvalidTenantSlugError
+  | TenantSlugAlreadyInUseError,
   {
     tenant: Tenant
     user: User
@@ -37,6 +42,7 @@ export class RegisterTenantUseCase {
   async execute({
     tenantName,
     tenantEmail,
+    tenantSlug,
     tenantDocument,
     tenantPhone,
     ownerName,
@@ -50,15 +56,25 @@ export class RegisterTenantUseCase {
       return left(new TenantAlreadyExistsError(tenantEmail))
     }
 
-    const userWithSameEmail =
-      await this.usersRepository.findByEmailGlobal(ownerEmail)
+    const slug = tenantSlug
+      ? Slug.create(tenantSlug)
+      : Slug.createFromText(tenantName)
 
-    if (userWithSameEmail) {
-      return left(new UserAlreadyExistsError(ownerEmail))
+    if (!slug.isValid()) {
+      return left(new InvalidTenantSlugError(slug.value))
+    }
+
+    const tenantWithSameSlug = await this.tenantsRepository.findBySlug(
+      slug.value,
+    )
+
+    if (tenantWithSameSlug) {
+      return left(new TenantSlugAlreadyInUseError(slug.value))
     }
 
     const tenant = Tenant.create({
       name: tenantName,
+      slug,
       email: tenantEmail,
       document: tenantDocument ?? null,
       phone: tenantPhone ?? null,

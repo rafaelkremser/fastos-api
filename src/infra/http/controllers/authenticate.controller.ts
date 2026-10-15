@@ -14,6 +14,7 @@ import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/
 import { WrongCredentialsError } from '@/domain/account/application/use-cases/errors/wrong-credentials-error'
 
 const authenticateBodySchema = z.object({
+  tenantSlug: z.string().trim().toLowerCase().min(1),
   email: z.string().email(),
   password: z.string(),
 })
@@ -31,9 +32,10 @@ export class AuthenticateController {
   @Post()
   @HttpCode(200)
   async handle(@Body(bodyValidationPipe) body: AuthenticateBodySchema) {
-    const { email, password } = body
+    const { tenantSlug, email, password } = body
 
     const result = await this.authenticateUser.execute({
+      tenantSlug,
       email,
       password,
     })

@@ -13,6 +13,7 @@ datasource db {
 model Tenant {
   id        String    @id @default(uuid())
   name      String
+  slug      String    @unique
   document  String?
   email     String    @unique
   phone     String?

@@ -5,6 +5,7 @@ export class TenantPresenter {
     return {
       id: tenant.id.toString(),
       name: tenant.name,
+      slug: tenant.slug.value,
       email: tenant.email,
       document: tenant.document,
       phone: tenant.phone,
