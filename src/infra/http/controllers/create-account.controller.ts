@@ -12,13 +12,14 @@ import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { Public } from '@/infra/auth/public'
 import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/register-tenant'
 import { TenantAlreadyExistsError } from '@/domain/account/application/use-cases/errors/tenant-already-exists-error'
-import { UserAlreadyExistsError } from '@/domain/account/application/use-cases/errors/user-already-exists-error'
+import { TenantSlugAlreadyInUseError } from '@/domain/account/application/use-cases/errors/tenant-slug-already-in-use-error'
 import { TenantPresenter } from '../presenters/tenant-presenter'
 import { UserPresenter } from '../presenters/user-presenter'
 
 const createAccountBodySchema = z.object({
   tenantName: z.string().min(2),
   tenantEmail: z.string().email(),
+  tenantSlug: z.string().trim().toLowerCase().optional().nullable(),
   tenantDocument: z.string().optional().nullable(),
   tenantPhone: z.string().optional().nullable(),
   ownerName: z.string().min(2),
@@ -42,6 +43,7 @@ export class CreateAccountController {
     const {
       tenantName,
       tenantEmail,
+      tenantSlug,
       tenantDocument,
       tenantPhone,
       ownerName,
@@ -52,6 +54,7 @@ export class CreateAccountController {
     const result = await this.registerTenant.execute({
       tenantName,
       tenantEmail,
+      tenantSlug,
       tenantDocument,
       tenantPhone,
       ownerName,
@@ -64,7 +67,7 @@ export class CreateAccountController {
 
       switch (error.constructor) {
         case TenantAlreadyExistsError:
-        case UserAlreadyExistsError:
+        case TenantSlugAlreadyInUseError:
           throw new ConflictException(error.message)
         default:
           throw new BadRequestException(error.message)

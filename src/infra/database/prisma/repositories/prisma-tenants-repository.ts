@@ -32,6 +32,18 @@ export class PrismaTenantsRepository implements TenantsRepository {
     return PrismaTenantMapper.toDomain(tenant)
   }
 
+  async findBySlug(slug: string): Promise<Tenant | null> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug },
+    })
+
+    if (!tenant) {
+      return null
+    }
+
+    return PrismaTenantMapper.toDomain(tenant)
+  }
+
   async create(tenant: Tenant): Promise<void> {
     const data = PrismaTenantMapper.toPrisma(tenant)
 

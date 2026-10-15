@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { TenantsRepository } from '../repositories/tenants-repository'
 import { UsersRepository } from '../repositories/users-repository'
 import { Hasher } from '../cryptography/hasher'
 import { Encrypter } from '../cryptography/encrypter'
 import { WrongCredentialsError } from './errors/wrong-credentials-error'
 
 interface AuthenticateUserUseCaseRequest {
+  tenantSlug: string
   email: string
   password: string
 }
@@ -20,22 +22,29 @@ type AuthenticateUserUseCaseResponse = Either<
 @Injectable()
 export class AuthenticateUserUseCase {
   constructor(
+    private tenantsRepository: TenantsRepository,
     private usersRepository: UsersRepository,
     private hasher: Hasher,
     private encrypter: Encrypter,
   ) {}
 
   async execute({
+    tenantSlug,
     email,
     password,
   }: AuthenticateUserUseCaseRequest): Promise<AuthenticateUserUseCaseResponse> {
-    const user = await this.usersRepository.findByEmailGlobal(email)
+    const tenant = await this.tenantsRepository.findBySlug(tenantSlug)
 
-    if (!user) {
+    if (!tenant || !tenant.isActive) {
       return left(new WrongCredentialsError())
     }
 
-    if (!user.isActive) {
+    const user = await this.usersRepository.findByEmail(
+      tenant.id.toString(),
+      email,
+    )
+
+    if (!user || !user.isActive) {
       return left(new WrongCredentialsError())
     }
 
