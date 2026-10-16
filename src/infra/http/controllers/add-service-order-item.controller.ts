@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { Roles } from '@/infra/auth/roles.decorator'
 import { AddServiceOrderItemUseCase } from '@/domain/service-order/application/use-cases/add-service-order-item'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -31,6 +32,7 @@ type AddItemBodySchema = z.infer<typeof addItemBodySchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles('OWNER', 'ADMIN', 'TECHNICIAN')
 @Controller('/service-orders/:id/items')
 export class AddServiceOrderItemController {
   constructor(private addServiceOrderItem: AddServiceOrderItemUseCase) {}

@@ -7,12 +7,14 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { GetTenantUseCase } from '@/domain/account/application/use-cases/get-tenant'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { TenantPresenter } from '../presenters/tenant-presenter'
 
 @ApiTags('Account')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/tenant')
 export class GetTenantController {
   constructor(private getTenant: GetTenantUseCase) {}

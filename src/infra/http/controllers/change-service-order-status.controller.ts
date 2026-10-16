@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { ChangeServiceOrderStatusUseCase } from '@/domain/service-order/application/use-cases/change-service-order-status'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -39,6 +40,7 @@ type ChangeStatusBodySchema = z.infer<typeof changeStatusBodySchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/service-orders/:id/status')
 export class ChangeServiceOrderStatusController {
   constructor(

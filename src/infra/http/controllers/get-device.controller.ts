@@ -9,6 +9,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { GetDeviceUseCase } from '@/domain/device/application/use-cases/get-device'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -16,6 +17,7 @@ import { DevicePresenter } from '../presenters/device-presenter'
 
 @ApiTags('Devices')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/devices/:id')
 export class GetDeviceController {
   constructor(private getDevice: GetDeviceUseCase) {}

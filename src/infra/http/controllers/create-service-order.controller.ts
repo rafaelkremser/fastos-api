@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { CreateServiceOrderUseCase } from '@/domain/service-order/application/use-cases/create-service-order'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { ServiceOrderPresenter } from '../presenters/service-order-presenter'
@@ -30,6 +31,7 @@ type CreateServiceOrderBodySchema = z.infer<typeof createServiceOrderBodySchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/service-orders')
 export class CreateServiceOrderController {
   constructor(private createServiceOrder: CreateServiceOrderUseCase) {}

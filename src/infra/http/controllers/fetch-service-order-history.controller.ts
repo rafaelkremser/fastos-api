@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/application/use-cases/fetch-service-order-history'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -30,6 +31,7 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/service-orders/:id/history')
 export class FetchServiceOrderHistoryController {
   constructor(

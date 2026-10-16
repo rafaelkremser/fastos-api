@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { EditCustomerUseCase } from '@/domain/customer/application/use-cases/edit-customer'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -40,6 +41,7 @@ type EditCustomerBodySchema = z.infer<typeof editCustomerBodySchema>
 
 @ApiTags('Customers')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/customers/:id')
 export class EditCustomerController {
   constructor(private editCustomer: EditCustomerUseCase) {}
