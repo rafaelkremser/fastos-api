@@ -1,5 +1,10 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    // Keep it inside dist: nest's deleteOutDir must wipe it too, or the next build emits nothing
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.e2e-spec.ts"]
 }
