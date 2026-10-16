@@ -1,17 +1,21 @@
 ### Variáveis
+# O token e os IDs saem das respostas das requisições marcadas com "# @name".
+# Rode na ordem 1 → 2 → 3 → 4 → 10 → 14 → 22; as demais usam os valores sozinhas.
 @baseUrl = http://localhost:3333
-@token = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlZTNkNjQ0Ny02MzhkLTQ4NzMtOWY0NS0wMDMxZjVmZGYwZDUiLCJ0ZW5hbnRJZCI6IjdiMmFmOGFmLTQ0ZjktNDc3OC04NmJjLWE4NDYxM2QzMDk5MyIsInJvbGUiOiJPV05FUiIsImlhdCI6MTc2OTM5MDkxMCwiZXhwIjoxNzY5OTk1NzEwfQ.o-za2PrxUZA0cncqIR7N5D1Cv7qgGfvppQT3_cBi1HWYF-ZvG7M2WivrO-0iX8bSyTamOrgKEVNrawKSAtZm9V9HJmZdjLdGYWqpt7UKEZKN7xV8PElkFjDSPNtD7NWFtDY8iNMzsgWu-TDOiBqzi4lTkPaYnWCSkJv-Fef-WYzAYNbyl_RzcOy2bDeBxKXiyEjrjUNCliZ6FkCy7RL4sTVFqO0x74FsQdEfZQwmvbN48oc2ICuXK-j8FcORQYV9uzpTDi4ccO6SdQOb89jhW_etLzsUyBmOg5Md29a2cerV9MCXZNsXD5xPDT014nTAIuVNd9cwVsmMTfZmYmJqTw
-@customerId = 455b976c-3241-4efa-93d7-e5afe73684b4
-@deviceId = 76a10d37-ae7d-44f5-8d21-f33319094b55
-@technicianId = e2d0ed25-6d65-4dcd-adc7-f127f7aebbfe
-@serviceOrderId = dea0d097-3474-4deb-9960-f4a07c52378a
+@token = {{login.response.body.$.access_token}}
+@technicianId = {{createUser.response.body.$.user.id}}
+@customerId = {{createCustomer.response.body.$.customer.id}}
+@deviceId = {{createDevice.response.body.$.device.id}}
+@serviceOrderId = {{createServiceOrder.response.body.$.serviceOrder.id}}
+@itemId = {{addPart.response.body.$.item.id}}
 
 ### ========================================
 ### AUTH - Autenticação
 ### ========================================
 
 ### 1. Registrar novo tenant (conta + usuário OWNER)
-### tenantSlug é opcional: se omitido, é gerado do nome ("assistencia-tech")
+# tenantSlug é opcional: se omitido, é gerado do nome ("assistencia-tech").
+# Rodar de novo com os mesmos dados dá 409: troque tenantSlug e tenantEmail.
 POST {{baseUrl}}/accounts
 Content-Type: application/json
 
@@ -27,7 +31,8 @@ Content-Type: application/json
 }
 
 ### 2. Login (autenticar usuário)
-### tenantSlug é o subdomínio da assistência (assistencia-tech.fastos.com)
+# tenantSlug é o subdomínio da assistência (assistencia-tech.fastos.com)
+# @name login
 POST {{baseUrl}}/authenticate
 Content-Type: application/json
 
@@ -37,11 +42,20 @@ Content-Type: application/json
   "password": "senha123"
 }
 
+### 2.1 Usuário do token
+GET {{baseUrl}}/user
+Authorization: Bearer {{token}}
+
+### 2.2 Tenant do token (mostra em qual assistência você entrou)
+GET {{baseUrl}}/tenant
+Authorization: Bearer {{token}}
+
 ### ========================================
 ### USERS - Usuários
 ### ========================================
 
 ### 3. Criar usuário (requer autenticação)
+# @name createUser
 POST {{baseUrl}}/users
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -58,6 +72,7 @@ Content-Type: application/json
 ### ========================================
 
 ### 4. Criar cliente
+# @name createCustomer
 POST {{baseUrl}}/customers
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -116,6 +131,7 @@ Authorization: Bearer {{token}}
 ### ========================================
 
 ### 10. Criar aparelho
+# @name createDevice
 POST {{baseUrl}}/devices
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -163,6 +179,7 @@ Authorization: Bearer {{token}}
 ### ========================================
 
 ### 14. Criar ordem de serviço
+# @name createServiceOrder
 POST {{baseUrl}}/service-orders
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -240,6 +257,7 @@ Content-Type: application/json
 }
 
 ### 22. Adicionar item (peça) à ordem
+# @name addPart
 POST {{baseUrl}}/service-orders/{{serviceOrderId}}/items
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -287,13 +305,21 @@ Authorization: Bearer {{token}}
 ### FLUXO COMPLETO DE TESTE
 ### ========================================
 
-### Execute na ordem:
-### 1. POST /accounts -> Criar conta (anota o token)
-### 2. POST /authenticate -> Fazer login com tenantSlug (pega o token)
-### 3. Copie o token e cole na variável @token acima
-### 4. POST /customers -> Criar cliente (anota o customerId)
-### 5. POST /devices -> Criar aparelho com o customerId
-### 6. POST /service-orders -> Criar OS com customerId e deviceId
-### 7. PATCH /service-orders/:id/status -> Alterar status
-### 8. POST /service-orders/:id/items -> Adicionar itens
-### 9. GET /service-orders/:id/history -> Ver histórico
+# Execute na ordem (token e IDs são capturados sozinhos):
+# 1. POST /accounts          (requisição 1)  -> Criar conta
+# 2. POST /authenticate      (requisição 2)  -> Login com tenantSlug
+# 3. GET /tenant             (requisição 2.2) -> Confere em qual assistência entrou
+# 4. POST /customers         (requisição 4)  -> Criar cliente
+# 5. POST /devices           (requisição 10) -> Criar aparelho do cliente
+# 6. POST /service-orders    (requisição 14) -> Criar OS
+# 7. PATCH .../status        (requisição 20) -> Alterar status
+# 8. POST .../items          (requisição 22) -> Adicionar item
+# 9. GET .../history         (requisição 26) -> Ver histórico
+#
+# Teste de isolamento entre assistências:
+# a. Rode a requisição 1 de novo trocando tenantSlug e tenantEmail,
+#    mas com o MESMO ownerEmail (uma pessoa dona de duas lojas).
+# b. Rode a requisição 2 com o tenantSlug novo e depois a 2.2:
+#    o GET /tenant deve mostrar a loja nova.
+# c. Volte o tenantSlug da requisição 2 para o primeiro e rode 2 e 2.2:
+#    deve mostrar a primeira loja.
