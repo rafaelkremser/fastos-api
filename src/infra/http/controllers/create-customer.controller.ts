@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { CreateCustomerUseCase } from '@/domain/customer/application/use-cases/create-customer'
 import { CustomerAlreadyExistsError } from '@/domain/customer/application/use-cases/errors/customer-already-exists-error'
 import { CustomerPresenter } from '../presenters/customer-presenter'
@@ -37,6 +38,7 @@ type CreateCustomerBodySchema = z.infer<typeof createCustomerBodySchema>
 
 @ApiTags('Customers')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/customers')
 export class CreateCustomerController {
   constructor(private createCustomer: CreateCustomerUseCase) {}

@@ -6,6 +6,7 @@ import { EnvModule } from '@/infra/env/env.module'
 import { EnvService } from '@/infra/env/env.service'
 import { JwtStrategy } from './jwt.strategy'
 import { JwtAuthGuard } from './jwt-auth.guard'
+import { RolesGuard } from './roles.guard'
 
 @Module({
   imports: [
@@ -29,9 +30,14 @@ import { JwtAuthGuard } from './jwt-auth.guard'
   providers: [
     JwtStrategy,
     EnvService,
+    // Global guards run in this order: authenticate first, then check roles
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { Roles } from '@/infra/auth/roles.decorator'
 import { AssignTechnicianUseCase } from '@/domain/service-order/application/use-cases/assign-technician'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -28,6 +29,7 @@ type AssignTechnicianBodySchema = z.infer<typeof assignTechnicianBodySchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles('OWNER', 'ADMIN')
 @Controller('/service-orders/:id/technician')
 export class AssignTechnicianController {
   constructor(private assignTechnician: AssignTechnicianUseCase) {}

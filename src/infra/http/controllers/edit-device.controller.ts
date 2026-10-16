@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { EditDeviceUseCase } from '@/domain/device/application/use-cases/edit-device'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -36,6 +37,7 @@ type EditDeviceBodySchema = z.infer<typeof editDeviceBodySchema>
 
 @ApiTags('Devices')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/devices/:id')
 export class EditDeviceController {
   constructor(private editDevice: EditDeviceUseCase) {}

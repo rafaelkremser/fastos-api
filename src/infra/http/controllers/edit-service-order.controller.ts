@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { Roles } from '@/infra/auth/roles.decorator'
 import { EditServiceOrderUseCase } from '@/domain/service-order/application/use-cases/edit-service-order'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -38,6 +39,7 @@ type EditServiceOrderBodySchema = z.infer<typeof editServiceOrderBodySchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles('OWNER', 'ADMIN', 'TECHNICIAN')
 @Controller('/service-orders/:id')
 export class EditServiceOrderController {
   constructor(private editServiceOrder: EditServiceOrderUseCase) {}

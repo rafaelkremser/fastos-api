@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { FetchDevicesByCustomerUseCase } from '@/domain/device/application/use-cases/fetch-devices-by-customer'
 import { DevicePresenter } from '../presenters/device-presenter'
 
@@ -20,6 +21,7 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
 @ApiTags('Devices')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/customers/:customerId/devices')
 export class FetchDevicesByCustomerController {
   constructor(private fetchDevicesByCustomer: FetchDevicesByCustomerUseCase) {}

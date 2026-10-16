@@ -10,12 +10,14 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { Roles } from '@/infra/auth/roles.decorator'
 import { DeleteCustomerUseCase } from '@/domain/customer/application/use-cases/delete-customer'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 
 @ApiTags('Customers')
 @ApiBearerAuth()
+@Roles('OWNER', 'ADMIN')
 @Controller('/customers/:id')
 export class DeleteCustomerController {
   constructor(private deleteCustomer: DeleteCustomerUseCase) {}

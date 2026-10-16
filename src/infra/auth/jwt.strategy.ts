@@ -3,11 +3,12 @@ import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { z } from 'zod'
 import { EnvService } from '@/infra/env/env.service'
+import { USER_ROLES } from '@/domain/account/enterprise/entities/user'
 
 const tokenPayloadSchema = z.object({
   sub: z.string().uuid(),
   tenantId: z.string().uuid(),
-  role: z.string(),
+  role: z.enum(USER_ROLES),
 })
 
 export type UserPayload = z.infer<typeof tokenPayloadSchema>

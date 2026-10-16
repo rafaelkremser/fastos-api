@@ -2,7 +2,23 @@ import { Entity } from '@/core/entities/entity'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
 
-export type UserRole = 'OWNER' | 'ADMIN' | 'TECHNICIAN' | 'RECEPTIONIST'
+export const USER_ROLES = [
+  'OWNER',
+  'ADMIN',
+  'TECHNICIAN',
+  'RECEPTIONIST',
+] as const
+
+export type UserRole = (typeof USER_ROLES)[number]
+
+// Roles a user may give to a new teammate. Nobody creates a second owner,
+// and an admin cannot create other admins.
+const ASSIGNABLE_ROLES: Record<UserRole, UserRole[]> = {
+  OWNER: ['ADMIN', 'TECHNICIAN', 'RECEPTIONIST'],
+  ADMIN: ['TECHNICIAN', 'RECEPTIONIST'],
+  TECHNICIAN: [],
+  RECEPTIONIST: [],
+}
 
 export interface UserProps {
   tenantId: UniqueEntityID
@@ -80,6 +96,10 @@ export class User extends Entity<UserProps> {
   activate() {
     this.props.isActive = true
     this.touch()
+  }
+
+  canAssignRole(role: UserRole) {
+    return ASSIGNABLE_ROLES[this.role].includes(role)
   }
 
   static create(

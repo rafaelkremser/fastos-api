@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { FetchServiceOrdersUseCase } from '@/domain/service-order/application/use-cases/fetch-service-orders'
 import { ServiceOrderPresenter } from '../presenters/service-order-presenter'
 
@@ -20,6 +21,7 @@ type PageQueryParamSchema = z.infer<typeof pageQueryParamSchema>
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/service-orders')
 export class FetchServiceOrdersController {
   constructor(private fetchServiceOrders: FetchServiceOrdersUseCase) {}

@@ -9,6 +9,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { GetCustomerUseCase } from '@/domain/customer/application/use-cases/get-customer'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -16,6 +17,7 @@ import { CustomerPresenter } from '../presenters/customer-presenter'
 
 @ApiTags('Customers')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/customers/:id')
 export class GetCustomerController {
   constructor(private getCustomer: GetCustomerUseCase) {}

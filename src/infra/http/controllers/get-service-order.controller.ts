@@ -9,6 +9,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
+import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { GetServiceOrderUseCase } from '@/domain/service-order/application/use-cases/get-service-order'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -16,6 +17,7 @@ import { ServiceOrderPresenter } from '../presenters/service-order-presenter'
 
 @ApiTags('Service Orders')
 @ApiBearerAuth()
+@Roles(...ALL_ROLES)
 @Controller('/service-orders/:id')
 export class GetServiceOrderController {
   constructor(private getServiceOrder: GetServiceOrderUseCase) {}
