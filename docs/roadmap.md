@@ -18,7 +18,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | Fase | Feitos | Total |
 |---|:-:|:-:|
-| P0: bloqueadores de deploy | 6 | 8 |
+| P0: bloqueadores de deploy | 7 | 8 |
 | P1: quebra ou vaza em produção | 0 | 4 |
 | P2: operação | 0 | 7 |
 | P3: escala e LGPD | 0 | 5 |
@@ -31,15 +31,16 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P0-2 | Login isolado por loja (subdomínio) | Feito | [PR #1](https://github.com/rafaelkremser/fastos-api/pull/1) |
 | P0-3 | Controle de acesso por papel | Feito | [PR #3](https://github.com/rafaelkremser/fastos-api/pull/3) |
 | P0-4 | Limite de tentativas no login e no cadastro | Feito | [PR #4](https://github.com/rafaelkremser/fastos-api/pull/4) |
-| P0-5 | `helmet` e CORS configurável | **Próximo** | |
-| P0-6 | bcrypt com custo 12 | Pendente | |
+| P0-5 | `helmet`, CORS configurável e Swagger fora de produção | Feito | [PR #6](https://github.com/rafaelkremser/fastos-api/pull/6) |
+| P0-6 | bcrypt com custo 12 | **Próximo** | |
 | P0-7 | `start:prod` aplicando as migrations | Pendente | |
 | P0-8 | Dependências vulneráveis | Feito | `ded7842` |
 
-**P0-5: `helmet` e CORS configurável.**
-- O CORS aceita só `http://localhost:5173`, fixo em `src/main.ts`; o frontend em produção seria bloqueado. A lista de origens deve vir de uma variável `CORS_ORIGINS`.
-- O `helmet` adiciona os cabeçalhos HTTP de segurança, que hoje não existem.
-- Decidir junto: o Swagger (`/api/docs`) fica aberto em produção e expõe o mapa da API. Desligar em produção ou proteger com senha.
+**P0-5: `helmet`, CORS configurável e Swagger fora de produção.** Feito.
+- **CORS:** as origens vêm de `CORS_ORIGINS`. Como cada loja tem o seu subdomínio, a variável aceita `https://*.fastos.com`, que libera exatamente um nível de subdomínio. Vazia, nenhum site consegue chamar a API pelo navegador.
+- **Cabeçalhos de segurança:** o `helmet` acrescenta os cabeçalhos HTTP de segurança e esconde que a API usa Express.
+- **Swagger:** só sobe com `SWAGGER_ENABLED=true`. Sem a variável, fica desligado, que é o caso de produção.
+- **Testes:** a configuração HTTP fica em `src/infra/http/configure-http.ts`, testada sem subir a API inteira. Isso também cobre o `TRUST_PROXY_HOPS` do P0-4.
 
 **P0-6: bcrypt com custo 12.**
 - Hoje o custo é 8, em `src/infra/cryptography/bcrypt-hasher.ts`. Com 12, cada tentativa de adivinhar a senha fica cerca de 16 vezes mais cara.
@@ -138,8 +139,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon.
 - [ ] Migrations aplicadas no `production` (P0-7).
 - [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
-- [ ] `CORS_ORIGINS` com o domínio do frontend (P0-5).
-- [ ] Swagger desligado ou protegido em produção (P0-5).
+- [ ] `CORS_ORIGINS` com as origens do frontend, por exemplo `https://*.fastos.com`. Se ficar vazia, o frontend não consegue chamar a API.
+- [ ] `SWAGGER_ENABLED` não definida (ou `false`), para o `/api/docs` ficar desligado.
 - [ ] DNS curinga `*.fastos.com` apontando para o frontend.
 - [ ] Branch `dev` no git, pareada com o branch `dev` do Neon.
 
@@ -160,6 +161,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-16 | Rotas bloqueadas por padrão; um teste falha se alguma rota ficar sem marcação de papéis | Endpoint novo esquecido fica fechado, não aberto | Liberado por padrão |
 | 2026-10-16 | Papéis por rota conforme a matriz abaixo | Regra do negócio, definida pelo dono do projeto | |
 | 2026-10-16 | Login: 10 tentativas por minuto; cadastro: 10 por hora; por IP | Barrar força bruta e cadastro em massa | Limite por conta |
+| 2026-10-20 | Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` | Produção não expõe o mapa da API sem precisar lembrar de nada | Swagger em produção protegido por senha |
+| 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
 ### Matriz de papéis
 
