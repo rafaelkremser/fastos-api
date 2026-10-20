@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
+import { ThrottlerModule } from '@nestjs/throttler'
 import { DatabaseModule } from '../database/database.module'
 import { CryptographyModule } from '../cryptography/cryptography.module'
+import { THROTTLER_OPTIONS } from './rate-limit'
 
 // Account Controllers
 import { CreateAccountController } from './controllers/create-account.controller'
@@ -67,7 +69,11 @@ import { RemoveServiceOrderItemUseCase } from '@/domain/service-order/applicatio
 import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/application/use-cases/fetch-service-order-history'
 
 @Module({
-  imports: [DatabaseModule, CryptographyModule],
+  imports: [
+    DatabaseModule,
+    CryptographyModule,
+    ThrottlerModule.forRoot(THROTTLER_OPTIONS),
+  ],
   controllers: [
     // Account
     CreateAccountController,

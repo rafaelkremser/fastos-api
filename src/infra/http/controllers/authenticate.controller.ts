@@ -5,11 +5,14 @@ import {
   HttpCode,
   Post,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { Public } from '@/infra/auth/public'
+import { LOGIN_RATE_LIMIT } from '../rate-limit'
 import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/authenticate-user'
 import { WrongCredentialsError } from '@/domain/account/application/use-cases/errors/wrong-credentials-error'
 
@@ -26,6 +29,8 @@ type AuthenticateBodySchema = z.infer<typeof authenticateBodySchema>
 @ApiTags('Account')
 @Controller('/authenticate')
 @Public()
+@UseGuards(ThrottlerGuard)
+@Throttle(LOGIN_RATE_LIMIT)
 export class AuthenticateController {
   constructor(private authenticateUser: AuthenticateUserUseCase) {}
 
