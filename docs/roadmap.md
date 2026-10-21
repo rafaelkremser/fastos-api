@@ -32,8 +32,8 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P0-3 | Controle de acesso por papel | Feito | [PR #3](https://github.com/rafaelkremser/fastos-api/pull/3) |
 | P0-4 | Limite de tentativas no login e no cadastro | Feito | [PR #4](https://github.com/rafaelkremser/fastos-api/pull/4) |
 | P0-5 | `helmet`, CORS configurável e Swagger fora de produção | Feito | [PR #6](https://github.com/rafaelkremser/fastos-api/pull/6) |
-| P0-6 | bcrypt com custo 12 | **Próximo** | |
-| P0-7 | `start:prod` aplicando as migrations | Pendente | |
+| P0-6 | bcrypt com custo 12 e login com tempo constante | Feito | [PR #7](https://github.com/rafaelkremser/fastos-api/pull/7) |
+| P0-7 | `start:prod` aplicando as migrations | **Próximo** | |
 | P0-8 | Dependências vulneráveis | Feito | `ded7842` |
 
 **P0-5: `helmet`, CORS configurável e Swagger fora de produção.** Feito.
@@ -42,10 +42,10 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - **Swagger:** só sobe com `SWAGGER_ENABLED=true`. Sem a variável, fica desligado, que é o caso de produção.
 - **Testes:** a configuração HTTP fica em `src/infra/http/configure-http.ts`, testada sem subir a API inteira. Isso também cobre o `TRUST_PROXY_HOPS` do P0-4.
 
-**P0-6: bcrypt com custo 12.**
-- Hoje o custo é 8, em `src/infra/cryptography/bcrypt-hasher.ts`. Com 12, cada tentativa de adivinhar a senha fica cerca de 16 vezes mais cara.
-- As senhas já gravadas continuam funcionando, porque o bcrypt guarda o custo dentro do próprio hash.
-- Opcional: refazer o hash com o custo novo no próximo login de cada usuário.
+**P0-6: bcrypt com custo 12 e login com tempo constante.** Feito.
+- **Custo 12:** cada verificação de senha leva cerca de 230 ms, contra 15 ms no custo 8. Adivinhar uma senha a partir de um hash vazado fica cerca de 16 vezes mais caro.
+- **Hashes antigos continuam valendo:** o bcrypt guarda o custo dentro do próprio hash. Não foi preciso refazer hashes no login, porque o `production` ainda não tem usuários; todas as contas reais já nascem com custo 12.
+- **Login com tempo constante:** antes, um e-mail sem conta era recusado na hora, sem verificar senha, e um e-mail com conta levava o tempo do bcrypt. Com o custo maior, a diferença ficaria grande o bastante para descobrir quais e-mails têm conta numa loja. Agora o login sempre verifica uma senha: sem usuário, compara com um hash fictício e recusa. Medido na API: 293 ms com o e-mail existente e 292 ms com um e-mail sem conta.
 
 **P0-7: `start:prod` aplicando as migrations.**
 - Hoje o `start:prod` é só `node dist/main`, e nenhuma migration roda no deploy. O branch `production` do Neon ainda não tem a migration do slug.
@@ -128,6 +128,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
   - os contadores ficam na memória de cada instância (até o P3-5);
   - não há limite por conta, de propósito: travar por conta permitiria bloquear a conta de outra pessoa;
   - tentativas certas também contam.
+- **Custo do bcrypt no servidor:** cada login e cada cadastro ocupa cerca de 230 ms de processamento. O Node faz até 4 verificações ao mesmo tempo, então uma instância atende perto de 17 logins por segundo (medido numa máquina de desenvolvimento); acima disso, os pedidos esperam na fila.
+- **Loja inexistente responde cerca de 30 ms mais rápido no login,** porque nem consulta usuários. Isso só revela se o endereço da loja existe, e ele já é público.
 - **Vulnerabilidades restantes,** nenhuma alcançável por requisição:
   - `mysql2` e `deepmerge-ts` vêm do CLI do Prisma e só somem no Prisma 8, que ainda é versão de teste;
   - `js-yaml` vem do `@nestjs/swagger`.
@@ -162,6 +164,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-16 | Papéis por rota conforme a matriz abaixo | Regra do negócio, definida pelo dono do projeto | |
 | 2026-10-16 | Login: 10 tentativas por minuto; cadastro: 10 por hora; por IP | Barrar força bruta e cadastro em massa | Limite por conta |
 | 2026-10-20 | Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` | Produção não expõe o mapa da API sem precisar lembrar de nada | Swagger em produção protegido por senha |
+| 2026-10-20 | bcrypt com custo 12, sem refazer hashes antigos no login | O `production` ainda não tem usuários, então não há hash antigo a atualizar | Refazer o hash no próximo login |
+| 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
 ### Matriz de papéis

@@ -10,6 +10,7 @@ import { WrongCredentialsError } from './errors/wrong-credentials-error'
 
 let tenantsRepository: InMemoryTenantsRepository
 let usersRepository: InMemoryUsersRepository
+let hasher: FakeHasher
 let sut: AuthenticateUserUseCase
 
 function tokenPayload(accessToken: string) {
@@ -24,10 +25,11 @@ describe('Authenticate User', () => {
   beforeEach(() => {
     tenantsRepository = new InMemoryTenantsRepository()
     usersRepository = new InMemoryUsersRepository()
+    hasher = new FakeHasher()
     sut = new AuthenticateUserUseCase(
       tenantsRepository,
       usersRepository,
-      new FakeHasher(),
+      hasher,
       new FakeEncrypter(),
     )
   })
@@ -210,5 +212,32 @@ describe('Authenticate User', () => {
     })
 
     expect(result.value).toBeInstanceOf(WrongCredentialsError)
+  })
+
+  it('should check a password even when the email has no account', async () => {
+    tenantsRepository.items.push(makeTenant({ slug: Slug.create('loja-a') }))
+    const compare = jest.spyOn(hasher, 'compare')
+
+    const result = await sut.execute({
+      tenantSlug: 'loja-a',
+      email: 'ninguem@example.com',
+      password: '123456',
+    })
+
+    expect(result.value).toBeInstanceOf(WrongCredentialsError)
+    expect(compare).toHaveBeenCalledWith('123456', null)
+  })
+
+  it('should check a password even when the tenant does not exist', async () => {
+    const compare = jest.spyOn(hasher, 'compare')
+
+    const result = await sut.execute({
+      tenantSlug: 'nao-existe',
+      email: 'john@example.com',
+      password: '123456',
+    })
+
+    expect(result.value).toBeInstanceOf(WrongCredentialsError)
+    expect(compare).toHaveBeenCalledWith('123456', null)
   })
 })
