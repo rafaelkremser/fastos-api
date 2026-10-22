@@ -44,7 +44,6 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 **P0-6: bcrypt com custo 12 e login com tempo constante.** Feito.
 - **Custo 12:** cada verificação de senha leva cerca de 230 ms, contra 15 ms no custo 8. Adivinhar uma senha a partir de um hash vazado fica cerca de 16 vezes mais caro.
-- **Hashes antigos continuam valendo:** o bcrypt guarda o custo dentro do próprio hash. Não foi preciso refazer hashes no login, porque o `production` ainda não tem usuários; todas as contas reais já nascem com custo 12.
 - **Login com tempo constante:** antes, um e-mail sem conta era recusado na hora, sem verificar senha, e um e-mail com conta levava o tempo do bcrypt. Com o custo maior, a diferença ficaria grande o bastante para descobrir quais e-mails têm conta numa loja. Agora o login sempre verifica uma senha: sem usuário, compara com um hash fictício e recusa. Medido na API: 293 ms com o e-mail existente e 292 ms com um e-mail sem conta.
 
 **P0-7: `start:prod` aplicando as migrations.**
@@ -164,7 +163,6 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-16 | Papéis por rota conforme a matriz abaixo | Regra do negócio, definida pelo dono do projeto | |
 | 2026-10-16 | Login: 10 tentativas por minuto; cadastro: 10 por hora; por IP | Barrar força bruta e cadastro em massa | Limite por conta |
 | 2026-10-20 | Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` | Produção não expõe o mapa da API sem precisar lembrar de nada | Swagger em produção protegido por senha |
-| 2026-10-20 | bcrypt com custo 12, sem refazer hashes antigos no login | O `production` ainda não tem usuários, então não há hash antigo a atualizar | Refazer o hash no próximo login |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 

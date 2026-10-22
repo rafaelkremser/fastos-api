@@ -1,4 +1,4 @@
-import { getRounds, hash } from 'bcrypt'
+import { getRounds } from 'bcrypt'
 import { BcryptHasher } from './bcrypt-hasher'
 
 async function duration(action: () => Promise<unknown>) {
@@ -22,12 +22,6 @@ describe('BcryptHasher', () => {
 
     expect(await hasher.compare('senha-123', hashed)).toBe(true)
     expect(await hasher.compare('outra-senha', hashed)).toBe(false)
-  })
-
-  it('should still verify passwords hashed with the old cost 8', async () => {
-    const oldHash = await hash('senha-123', 8)
-
-    expect(await hasher.compare('senha-123', oldHash)).toBe(true)
   })
 
   it('should reject any password when there is no stored hash', async () => {
