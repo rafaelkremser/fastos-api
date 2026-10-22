@@ -2,7 +2,7 @@
 
 Plano para levar a API até a produção. É a referência única do que já foi feito, do que vem a seguir e por quê.
 
-**Última atualização:** 2026-10-20
+**Última atualização:** 2026-10-22
 
 ## Como usar este documento
 
@@ -18,7 +18,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | Fase | Feitos | Total |
 |---|:-:|:-:|
-| P0: bloqueadores de deploy | 7 | 8 |
+| P0: bloqueadores de deploy | 8 | 8 |
 | P1: quebra ou vaza em produção | 0 | 4 |
 | P2: operação | 0 | 7 |
 | P3: escala e LGPD | 0 | 5 |
@@ -33,7 +33,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P0-4 | Limite de tentativas no login e no cadastro | Feito | [PR #4](https://github.com/rafaelkremser/fastos-api/pull/4) |
 | P0-5 | `helmet`, CORS configurável e Swagger fora de produção | Feito | [PR #6](https://github.com/rafaelkremser/fastos-api/pull/6) |
 | P0-6 | bcrypt com custo 12 e login com tempo constante | Feito | [PR #7](https://github.com/rafaelkremser/fastos-api/pull/7) |
-| P0-7 | `start:prod` aplicando as migrations | **Próximo** | |
+| P0-7 | `start:prod` aplicando as migrations | Feito | [PR #8](https://github.com/rafaelkremser/fastos-api/pull/8) |
 | P0-8 | Dependências vulneráveis | Feito | `ded7842` |
 
 **P0-5: `helmet`, CORS configurável e Swagger fora de produção.** Feito.
@@ -46,10 +46,11 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - **Custo 12:** cada verificação de senha leva cerca de 230 ms, contra 15 ms no custo 8. Adivinhar uma senha a partir de um hash vazado fica cerca de 16 vezes mais caro.
 - **Login com tempo constante:** antes, um e-mail sem conta era recusado na hora, sem verificar senha, e um e-mail com conta levava o tempo do bcrypt. Com o custo maior, a diferença ficaria grande o bastante para descobrir quais e-mails têm conta numa loja. Agora o login sempre verifica uma senha: sem usuário, compara com um hash fictício e recusa. Medido na API: 293 ms com o e-mail existente e 292 ms com um e-mail sem conta.
 
-**P0-7: `start:prod` aplicando as migrations.**
-- Hoje o `start:prod` é só `node dist/main`, e nenhuma migration roda no deploy. O branch `production` do Neon ainda não tem a migration do slug.
-- O deploy precisa rodar `prisma migrate deploy` antes de subir a API.
-- O CLI do Prisma está em `devDependencies`: quem instalar sem as dependências de desenvolvimento não terá o comando no servidor.
+**P0-7: `start:prod` aplicando as migrations.** Feito.
+- **`start:prod`** agora é `prisma migrate deploy && node dist/main`: aplica as migrations pendentes e só sobe a API se elas derem certo. Com o banco inacessível ou sem `DATABASE_URL_UNPOOLED`, a API não sobe e o erro aparece no log.
+- **`npm run prisma:deploy`** aplica só as migrations, para serviços de hospedagem que têm uma etapa própria de release antes de iniciar a aplicação.
+- **O CLI do Prisma passou para as dependências de produção.** Antes, ele só vinha numa instalação sem as dependências de desenvolvimento por um detalhe do lockfile (marcado como `devOptional`), e sumiria com `--omit=optional` ou outro gerenciador de pacotes. Sem ele, o `postinstall` (`prisma generate`) também falharia.
+- **Testado** num branch temporário do Neon copiado do `production`, já apagado: a primeira subida aplicou a migration do slug, a segunda não tinha nada pendente, e com a URL errada ou ausente a API não subiu. O `production` em si continua sem a migration do slug até o primeiro deploy.
 
 **P0-8: dependências vulneráveis.** As vulnerabilidades em produção caíram de 27 (1 crítica) para 6, e nenhuma das restantes é alcançável por requisição (ver "Débitos conhecidos").
 
@@ -64,7 +65,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | # | Item | Status |
 |---|---|---|
-| P1-1 | Refresh token (acesso de 15 min, renovação de 7 dias) | Pendente |
+| P1-1 | Refresh token (acesso de 15 min, renovação de 7 dias) | **Próximo** |
 | P1-2 | Transações nos fluxos que gravam mais de um registro | Pendente |
 | P1-3 | Itens da OS carregados junto com a OS | Pendente |
 | P1-4 | Numeração da OS sem duplicar | Pendente |
@@ -138,7 +139,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - [ ] Hospedagem escolhida (P2-1), na mesma região do banco (São Paulo).
 - [ ] Par de chaves JWT novo, só para produção, guardado nos segredos do host (nunca o de desenvolvimento).
 - [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon.
-- [ ] Migrations aplicadas no `production` (P0-7).
+- [ ] Sequência do deploy: `npm ci` e `npm run build` (o build precisa das dependências de desenvolvimento); na execução, basta `npm ci --omit=dev` e `npm run start:prod`, que aplica as migrations antes de subir. Se o host tiver etapa de release, rodar `npm run prisma:deploy` nela e `node dist/main` como comando de início.
 - [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
 - [ ] `CORS_ORIGINS` com as origens do frontend, por exemplo `https://*.fastos.com`. Se ficar vazia, o frontend não consegue chamar a API.
 - [ ] `SWAGGER_ENABLED` não definida (ou `false`), para o `/api/docs` ficar desligado.
@@ -163,6 +164,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-16 | Papéis por rota conforme a matriz abaixo | Regra do negócio, definida pelo dono do projeto | |
 | 2026-10-16 | Login: 10 tentativas por minuto; cadastro: 10 por hora; por IP | Barrar força bruta e cadastro em massa | Limite por conta |
 | 2026-10-20 | Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` | Produção não expõe o mapa da API sem precisar lembrar de nada | Swagger em produção protegido por senha |
+| 2026-10-22 | Migrations aplicadas pelo `start:prod`, antes de subir a API | Nenhum deploy sobe com o banco desatualizado; se a migration falhar, a API não sobe. Com várias instâncias, o Prisma usa um bloqueio no banco e só uma aplica | Rodar as migrations à mão a cada deploy |
+| 2026-10-22 | CLI do Prisma nas dependências de produção | O `start:prod` e o `postinstall` precisam dele no servidor | Manter em `devDependencies` e depender do lockfile |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
