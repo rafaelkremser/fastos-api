@@ -6,7 +6,10 @@ import { Encrypter } from '@/domain/account/application/cryptography/encrypter'
 export class JwtEncrypter implements Encrypter {
   constructor(private jwtService: JwtService) {}
 
-  async encrypt(payload: Record<string, unknown>): Promise<string> {
-    return this.jwtService.signAsync(payload)
+  async encrypt(
+    payload: Record<string, unknown>,
+    expiresInSeconds: number,
+  ): Promise<string> {
+    return this.jwtService.signAsync(payload, { expiresIn: expiresInSeconds })
   }
 }

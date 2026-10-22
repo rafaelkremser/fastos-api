@@ -19,7 +19,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | Fase | Feitos | Total |
 |---|:-:|:-:|
 | P0: bloqueadores de deploy | 8 | 8 |
-| P1: quebra ou vaza em produção | 0 | 4 |
+| P1: quebra ou vaza em produção | 1 | 4 |
 | P2: operação | 0 | 7 |
 | P3: escala e LGPD | 0 | 5 |
 
@@ -63,16 +63,20 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 ## P1: quebra ou vaza em produção
 
-| # | Item | Status |
-|---|---|---|
-| P1-1 | Refresh token (acesso de 15 min, renovação de 7 dias) | **Próximo** |
-| P1-2 | Transações nos fluxos que gravam mais de um registro | Pendente |
-| P1-3 | Itens da OS carregados junto com a OS | Pendente |
-| P1-4 | Numeração da OS sem duplicar | Pendente |
+| # | Item | Status | Onde |
+|---|---|---|---|
+| P1-1 | Refresh token (acesso de 15 min, renovação de 7 dias) | Feito | [PR #9](https://github.com/rafaelkremser/fastos-api/pull/9) |
+| P1-2 | Transações nos fluxos que gravam mais de um registro | **Próximo** | |
+| P1-3 | Itens da OS carregados junto com a OS | Pendente | |
+| P1-4 | Numeração da OS sem duplicar | Pendente | |
 
-**P1-1: refresh token.**
-- O token de acesso dura 7 dias (`src/infra/auth/auth.module.ts`). Um token vazado vale por uma semana, e uma mudança de papel só vale no próximo login.
-- Proposta: acesso de 15 minutos e renovação de 7 dias, sem guardar no banco (ver "Decisões").
+**P1-1: refresh token.** Feito.
+- **Login:** devolve dois tokens no corpo da resposta: o de acesso (`access_token`, 15 minutos) e o de renovação (`refresh_token`, 7 dias). Antes havia um só, de 7 dias.
+- **`POST /refresh`:** recebe o token de renovação e devolve um token de acesso novo. O de renovação não é trocado, então a sessão acaba 7 dias depois do login.
+- **A renovação consulta o banco:** o usuário e a loja precisam continuar ativos, e o papel vem do cadastro atual. Desativar alguém corta o acesso em até 15 minutos, e uma mudança de papel passa a valer em até 15 minutos.
+- **Os dois tokens usam a mesma chave e se distinguem pelo campo `type`:** o de renovação não abre rotas, e o de acesso não serve para renovar.
+- **Token com conteúdo inesperado responde 401.** Antes, um token bem assinado com conteúdo fora do formato viraria erro 500.
+- **Limite:** 30 renovações por minuto por IP.
 
 **P1-2: transações.** Nenhum fluxo usa `$transaction`, então uma falha no meio de uma operação deixa dados pela metade:
 - o cadastro pode criar a loja sem o dono;
@@ -123,7 +127,13 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - **O técnico vê todas as OS da loja,** não só as atribuídas a ele. Isso é um filtro por dono do registro, não por papel.
 - **Não há regra por status:** qualquer papel pode levar a OS para qualquer status.
 - **Atribuir técnico aceita qualquer usuário da loja,** inclusive um atendente.
-- **O papel vem do token** nas rotas: uma mudança de papel só vale no próximo login (até o P1-1). A exceção é a criação de usuários, que lê o papel do banco.
+- **O papel vem do token de acesso:** uma mudança de papel leva até 15 minutos para valer, o tempo de o token vencer e ser renovado. A exceção é a criação de usuários, que lê o papel do banco na hora.
+- **Não há revogação de tokens:**
+  - um token de renovação vazado vale até completar 7 dias do login;
+  - "sair do sistema" é o frontend apagar os tokens, e quem tiver uma cópia continua podendo usá-la até vencer;
+  - desativar o usuário ou a loja corta o acesso em até 15 minutos;
+  - persistir os tokens no banco e trocar a cada uso (P3-1) resolve.
+- **Os tokens ficam no frontend,** porque vêm no corpo da resposta: um script malicioso injetado no site (XSS) conseguiria lê-los. Guardar o de renovação num cookie que o JavaScript não lê é a alternativa, quando houver frontend.
 - **Limite de tentativas:**
   - os contadores ficam na memória de cada instância (até o P3-5);
   - não há limite por conta, de propósito: travar por conta permitiria bloquear a conta de outra pessoa;
@@ -166,6 +176,10 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-20 | Swagger desligado por padrão; liga com `SWAGGER_ENABLED=true` | Produção não expõe o mapa da API sem precisar lembrar de nada | Swagger em produção protegido por senha |
 | 2026-10-22 | Migrations aplicadas pelo `start:prod`, antes de subir a API | Nenhum deploy sobe com o banco desatualizado; se a migration falhar, a API não sobe. Com várias instâncias, o Prisma usa um bloqueio no banco e só uma aplica | Rodar as migrations à mão a cada deploy |
 | 2026-10-22 | CLI do Prisma nas dependências de produção | O `start:prod` e o `postinstall` precisam dele no servidor | Manter em `devDependencies` e depender do lockfile |
+| 2026-10-22 | Tokens no corpo da resposta, guardados pelo frontend | Funciona igual para site e app, inclusive com o subdomínio de cada loja em desenvolvimento | Refresh em cookie httpOnly (reavaliar com o frontend) |
+| 2026-10-22 | Sessão de 7 dias a partir do login; a renovação não troca o token de renovação | Sem revogação, um token de renovação vazado deixa de valer em no máximo 7 dias | Renovar a sessão a cada uso |
+| 2026-10-22 | Um par de chaves para os dois tokens, separados pelo campo `type` | Nenhuma variável de ambiente nova; um tipo não serve no lugar do outro | Um par de chaves só para os tokens de renovação |
+| 2026-10-22 | A renovação confere no banco usuário, loja e papel | Desativar alguém tem efeito em até 15 minutos, mesmo sem revogação | Validar só a assinatura do token |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 

@@ -15,6 +15,7 @@ import { Public } from '@/infra/auth/public'
 import { LOGIN_RATE_LIMIT } from '../rate-limit'
 import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/authenticate-user'
 import { WrongCredentialsError } from '@/domain/account/application/use-cases/errors/wrong-credentials-error'
+import { ACCESS_TOKEN_TTL_SECONDS } from '@/domain/account/application/cryptography/tokens'
 
 const authenticateBodySchema = z.object({
   tenantSlug: z.string().trim().toLowerCase().min(1),
@@ -56,10 +57,12 @@ export class AuthenticateController {
       }
     }
 
-    const { accessToken } = result.value
+    const { accessToken, refreshToken } = result.value
 
     return {
       access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: ACCESS_TOKEN_TTL_SECONDS,
     }
   }
 }
