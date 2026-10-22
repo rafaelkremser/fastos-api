@@ -13,12 +13,8 @@ let usersRepository: InMemoryUsersRepository
 let hasher: FakeHasher
 let sut: AuthenticateUserUseCase
 
-function tokenPayload(accessToken: string) {
-  return JSON.parse(accessToken) as {
-    sub: string
-    tenantId: string
-    role: string
-  }
+function tokenPayload(token: string) {
+  return JSON.parse(token) as Record<string, unknown>
 }
 
 describe('Authenticate User', () => {
@@ -56,6 +52,14 @@ describe('Authenticate User', () => {
         sub: user.id.toString(),
         tenantId: tenant.id.toString(),
         role: user.role,
+        type: 'access',
+        expiresInSeconds: 15 * 60,
+      })
+      expect(tokenPayload(result.value.refreshToken)).toEqual({
+        sub: user.id.toString(),
+        tenantId: tenant.id.toString(),
+        type: 'refresh',
+        expiresInSeconds: 7 * 24 * 60 * 60,
       })
     }
   })

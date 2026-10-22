@@ -4,6 +4,10 @@ import { TenantsRepository } from '../repositories/tenants-repository'
 import { UsersRepository } from '../repositories/users-repository'
 import { Hasher } from '../cryptography/hasher'
 import { Encrypter } from '../cryptography/encrypter'
+import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_SECONDS,
+} from '../cryptography/tokens'
 import { WrongCredentialsError } from './errors/wrong-credentials-error'
 
 interface AuthenticateUserUseCaseRequest {
@@ -16,6 +20,7 @@ type AuthenticateUserUseCaseResponse = Either<
   WrongCredentialsError,
   {
     accessToken: string
+    refreshToken: string
   }
 >
 
@@ -50,14 +55,22 @@ export class AuthenticateUserUseCase {
       return left(new WrongCredentialsError())
     }
 
-    const accessToken = await this.encrypter.encrypt({
-      sub: user.id.toString(),
-      tenantId: user.tenantId.toString(),
-      role: user.role,
-    })
+    const sub = user.id.toString()
+    const tenantId = user.tenantId.toString()
+
+    const accessToken = await this.encrypter.encrypt(
+      { sub, tenantId, role: user.role, type: 'access' },
+      ACCESS_TOKEN_TTL_SECONDS,
+    )
+
+    const refreshToken = await this.encrypter.encrypt(
+      { sub, tenantId, type: 'refresh' },
+      REFRESH_TOKEN_TTL_SECONDS,
+    )
 
     return right({
       accessToken,
+      refreshToken,
     })
   }
 }

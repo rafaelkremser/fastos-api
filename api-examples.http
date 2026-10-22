@@ -3,6 +3,7 @@
 # Rode na ordem 1 → 2 → 3 → 4 → 10 → 14 → 22; as demais usam os valores sozinhas.
 @baseUrl = http://localhost:3333
 @token = {{login.response.body.$.access_token}}
+@refreshToken = {{login.response.body.$.refresh_token}}
 @technicianId = {{createUser.response.body.$.user.id}}
 @customerId = {{createCustomer.response.body.$.customer.id}}
 @deviceId = {{createDevice.response.body.$.device.id}}
@@ -32,6 +33,8 @@ Content-Type: application/json
 
 ### 2. Login (autenticar usuário)
 # tenantSlug é o subdomínio da assistência (assistencia-tech.fastos.com)
+# Devolve access_token (vale 15 min) e refresh_token (vale 7 dias).
+# Quando o access_token vencer, rode este login de novo ou a renovação (2.3).
 # @name login
 POST {{baseUrl}}/authenticate
 Content-Type: application/json
@@ -49,6 +52,16 @@ Authorization: Bearer {{token}}
 ### 2.2 Tenant do token (mostra em qual assistência você entrou)
 GET {{baseUrl}}/tenant
 Authorization: Bearer {{token}}
+
+### 2.3 Renovar o token de acesso
+# Devolve um access_token novo de 15 min. O refresh_token não é renovado:
+# depois de 7 dias do login, é preciso logar de novo.
+POST {{baseUrl}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
 
 ### ========================================
 ### USERS - Usuários

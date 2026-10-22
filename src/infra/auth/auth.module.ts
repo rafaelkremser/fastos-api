@@ -20,7 +20,8 @@ import { RolesGuard } from './roles.guard'
         const publicKey = env.get('JWT_PUBLIC_KEY')
 
         return {
-          signOptions: { algorithm: 'RS256', expiresIn: '7d' },
+          // Each token sets its own expiry (see tokens.ts in the account domain)
+          signOptions: { algorithm: 'RS256' },
           privateKey: Buffer.from(privateKey, 'base64'),
           publicKey: Buffer.from(publicKey, 'base64'),
         }

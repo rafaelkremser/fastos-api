@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { z } from 'zod'
@@ -9,6 +9,7 @@ const tokenPayloadSchema = z.object({
   sub: z.string().uuid(),
   tenantId: z.string().uuid(),
   role: z.enum(USER_ROLES),
+  type: z.literal('access'),
 })
 
 export type UserPayload = z.infer<typeof tokenPayloadSchema>
@@ -25,7 +26,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     })
   }
 
-  async validate(payload: UserPayload) {
-    return tokenPayloadSchema.parse(payload)
+  // A refresh token or a malformed payload is a 401, not a server error
+  async validate(payload: unknown): Promise<UserPayload> {
+    const result = tokenPayloadSchema.safeParse(payload)
+
+    if (!result.success) {
+      throw new UnauthorizedException()
+    }
+
+    return result.data
   }
 }
