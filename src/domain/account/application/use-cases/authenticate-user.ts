@@ -35,22 +35,18 @@ export class AuthenticateUserUseCase {
   }: AuthenticateUserUseCaseRequest): Promise<AuthenticateUserUseCaseResponse> {
     const tenant = await this.tenantsRepository.findBySlug(tenantSlug)
 
-    if (!tenant || !tenant.isActive) {
-      return left(new WrongCredentialsError())
-    }
+    const user = tenant?.isActive
+      ? await this.usersRepository.findByEmail(tenant.id.toString(), email)
+      : null
 
-    const user = await this.usersRepository.findByEmail(
-      tenant.id.toString(),
-      email,
+    // Checked even without a user, so the response time does not reveal
+    // which emails have an account
+    const isPasswordValid = await this.hasher.compare(
+      password,
+      user?.password ?? null,
     )
 
-    if (!user || !user.isActive) {
-      return left(new WrongCredentialsError())
-    }
-
-    const isPasswordValid = await this.hasher.compare(password, user.password)
-
-    if (!isPasswordValid) {
+    if (!user || !user.isActive || !isPasswordValid) {
       return left(new WrongCredentialsError())
     }
 

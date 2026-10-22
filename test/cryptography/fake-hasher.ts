@@ -5,7 +5,7 @@ export class FakeHasher implements Hasher {
     return plain.concat('-hashed')
   }
 
-  async compare(plain: string, hash: string) {
-    return plain.concat('-hashed') === hash
+  async compare(plain: string, hash: string | null) {
+    return hash !== null && plain.concat('-hashed') === hash
   }
 }
