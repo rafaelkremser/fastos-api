@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { TransactionManager } from '@/core/transactions/transaction-manager'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
-import { ServiceOrder, OrderStatus } from '../../enterprise/entities/service-order'
+import {
+  ServiceOrder,
+  OrderStatus,
+} from '../../enterprise/entities/service-order'
 import { ServiceOrdersRepository } from '../repositories/service-orders-repository'
 import { ServiceOrderHistoryRepository } from '../repositories/service-order-history-repository'
 import { ServiceOrderHistory } from '../../enterprise/entities/service-order-history'
@@ -26,6 +30,7 @@ export class ChangeServiceOrderStatusUseCase {
   constructor(
     private serviceOrdersRepository: ServiceOrdersRepository,
     private historyRepository: ServiceOrderHistoryRepository,
+    private transactionManager: TransactionManager,
   ) {}
 
   async execute({
@@ -49,8 +54,6 @@ export class ChangeServiceOrderStatusUseCase {
     const oldStatus = serviceOrder.status
     serviceOrder.status = newStatus
 
-    await this.serviceOrdersRepository.save(serviceOrder)
-
     const history = ServiceOrderHistory.create({
       serviceOrderId: new UniqueEntityID(serviceOrderId),
       userId: new UniqueEntityID(userId),
@@ -60,7 +63,10 @@ export class ChangeServiceOrderStatusUseCase {
       newValue: newStatus,
     })
 
-    await this.historyRepository.create(history)
+    await this.transactionManager.run(async () => {
+      await this.serviceOrdersRepository.save(serviceOrder)
+      await this.historyRepository.create(history)
+    })
 
     return right({ serviceOrder })
   }

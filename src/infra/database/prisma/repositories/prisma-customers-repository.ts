@@ -10,7 +10,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Customer | null> {
-    const customer = await this.prisma.customer.findUnique({
+    const customer = await this.prisma.client.customer.findUnique({
       where: { id },
     })
 
@@ -22,7 +22,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
   }
 
   async findByPhone(tenantId: string, phone: string): Promise<Customer | null> {
-    const customer = await this.prisma.customer.findFirst({
+    const customer = await this.prisma.client.customer.findFirst({
       where: {
         tenantId,
         phone,
@@ -40,7 +40,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
     tenantId: string,
     { page, perPage = 20 }: PaginationParams,
   ): Promise<Customer[]> {
-    const customers = await this.prisma.customer.findMany({
+    const customers = await this.prisma.client.customer.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: perPage,
@@ -55,7 +55,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
     name: string,
     { page, perPage = 20 }: PaginationParams,
   ): Promise<Customer[]> {
-    const customers = await this.prisma.customer.findMany({
+    const customers = await this.prisma.client.customer.findMany({
       where: {
         tenantId,
         name: {
@@ -72,7 +72,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
   }
 
   async countByTenantId(tenantId: string): Promise<number> {
-    return this.prisma.customer.count({
+    return this.prisma.client.customer.count({
       where: { tenantId },
     })
   }
@@ -80,7 +80,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
   async create(customer: Customer): Promise<void> {
     const data = PrismaCustomerMapper.toPrisma(customer)
 
-    await this.prisma.customer.create({
+    await this.prisma.client.customer.create({
       data,
     })
   }
@@ -88,14 +88,14 @@ export class PrismaCustomersRepository implements CustomersRepository {
   async save(customer: Customer): Promise<void> {
     const data = PrismaCustomerMapper.toPrisma(customer)
 
-    await this.prisma.customer.update({
+    await this.prisma.client.customer.update({
       where: { id: data.id },
       data,
     })
   }
 
   async delete(customer: Customer): Promise<void> {
-    await this.prisma.customer.delete({
+    await this.prisma.client.customer.delete({
       where: { id: customer.id.toString() },
     })
   }

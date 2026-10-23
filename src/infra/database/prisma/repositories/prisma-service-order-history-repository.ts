@@ -15,7 +15,7 @@ export class PrismaServiceOrderHistoryRepository
     serviceOrderId: string,
     { page, perPage = 20 }: PaginationParams,
   ): Promise<ServiceOrderHistory[]> {
-    const history = await this.prisma.serviceOrderHistory.findMany({
+    const history = await this.prisma.client.serviceOrderHistory.findMany({
       where: { serviceOrderId },
       orderBy: { createdAt: 'desc' },
       take: perPage,
@@ -28,7 +28,7 @@ export class PrismaServiceOrderHistoryRepository
   async create(history: ServiceOrderHistory): Promise<void> {
     const data = PrismaServiceOrderHistoryMapper.toPrisma(history)
 
-    await this.prisma.serviceOrderHistory.create({
+    await this.prisma.client.serviceOrderHistory.create({
       data,
     })
   }

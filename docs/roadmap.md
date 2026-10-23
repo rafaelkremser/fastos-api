@@ -19,7 +19,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | Fase | Feitos | Total |
 |---|:-:|:-:|
 | P0: bloqueadores de deploy | 8 | 8 |
-| P1: quebra ou vaza em produção | 1 | 4 |
+| P1: quebra ou vaza em produção | 2 | 4 |
 | P2: operação | 0 | 7 |
 | P3: escala e LGPD | 0 | 5 |
 
@@ -66,8 +66,8 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | # | Item | Status | Onde |
 |---|---|---|---|
 | P1-1 | Refresh token (acesso de 15 min, renovação de 7 dias) | Feito | [PR #9](https://github.com/rafaelkremser/fastos-api/pull/9) |
-| P1-2 | Transações nos fluxos que gravam mais de um registro | **Próximo** | |
-| P1-3 | Itens da OS carregados junto com a OS | Pendente | |
+| P1-2 | Transações nos fluxos que gravam mais de um registro | Feito | [PR #10](https://github.com/rafaelkremser/fastos-api/pull/10) |
+| P1-3 | Itens da OS carregados junto com a OS | **Próximo** | |
 | P1-4 | Numeração da OS sem duplicar | Pendente | |
 
 **P1-1: refresh token.** Feito.
@@ -78,9 +78,12 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - **Token com conteúdo inesperado responde 401.** Antes, um token bem assinado com conteúdo fora do formato viraria erro 500.
 - **Limite:** 30 renovações por minuto por IP.
 
-**P1-2: transações.** Nenhum fluxo usa `$transaction`, então uma falha no meio de uma operação deixa dados pela metade:
-- o cadastro pode criar a loja sem o dono;
-- a mudança de status e a atribuição de técnico podem ficar sem o registro no histórico.
+**P1-2: transações.** Feito.
+- **O problema:** uma falha no meio de uma operação deixava dados pela metade. O cadastro podia criar a loja sem o dono, e a mudança de status e a atribuição de técnico podiam ficar sem o registro no histórico.
+- **`TransactionManager`** (`src/core/transactions`): o domínio pede "rode isto de forma atômica" sem saber que existe Prisma. Se algo falhar lá dentro, tudo o que foi gravado é desfeito.
+- **Os repositórios entram na transação sozinhos:** eles acessam o banco por `this.prisma.client`, que devolve a transação aberta quando existe uma. Repositório novo precisa seguir esse padrão, e nunca usar `this.prisma.<modelo>` direto.
+- **Aplicado** no cadastro (loja e dono), na mudança de status e na atribuição de técnico (OS e histórico). No cadastro, o hash da senha (cerca de 230 ms) roda antes de abrir a transação, para ela segurar a conexão só durante as gravações.
+- **Testado contra o banco real:** sem transação, um erro do banco deixava a loja sem dono; com transação, a loja é desfeita. Uma transação dentro de outra se junta a ela, e duas transações ao mesmo tempo não se misturam.
 
 **P1-3: itens da OS.**
 - O mapper cria a lista de itens sempre vazia (`prisma-service-order-mapper.ts`), e o repositório não carrega os itens do banco.
@@ -133,6 +136,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
   - "sair do sistema" é o frontend apagar os tokens, e quem tiver uma cópia continua podendo usá-la até vencer;
   - desativar o usuário ou a loja corta o acesso em até 15 minutos;
   - persistir os tokens no banco e trocar a cada uso (P3-1) resolve.
+- **Eventos de domínio disparam antes do commit:** o repositório de OS dispara os eventos logo após gravar, ainda dentro da transação. Hoje nenhum evento tem handler, então não há efeito. Quando houver notificações (P3-4), um envio poderia sair para uma mudança que depois foi desfeita; os eventos terão de disparar só depois do commit.
+- **Cadastros simultâneos com o mesmo endereço ou e-mail:** se dois pedidos passarem pela verificação ao mesmo tempo, o segundo esbarra na restrição de unicidade do banco e recebe erro 500 em vez de 409. Graças à transação, nada fica gravado pela metade.
 - **Os tokens ficam no frontend,** porque vêm no corpo da resposta: um script malicioso injetado no site (XSS) conseguiria lê-los. Guardar o de renovação num cookie que o JavaScript não lê é a alternativa, quando houver frontend.
 - **Limite de tentativas:**
   - os contadores ficam na memória de cada instância (até o P3-5);
@@ -180,6 +185,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-22 | Sessão de 7 dias a partir do login; a renovação não troca o token de renovação | Sem revogação, um token de renovação vazado deixa de valer em no máximo 7 dias | Renovar a sessão a cada uso |
 | 2026-10-22 | Um par de chaves para os dois tokens, separados pelo campo `type` | Nenhuma variável de ambiente nova; um tipo não serve no lugar do outro | Um par de chaves só para os tokens de renovação |
 | 2026-10-22 | A renovação confere no banco usuário, loja e papel | Desativar alguém tem efeito em até 15 minutos, mesmo sem revogação | Validar só a assinatura do token |
+| 2026-10-22 | Transações por um `TransactionManager` no domínio, com a transação aberta guardada no contexto da requisição (`AsyncLocalStorage`) | O domínio não conhece o Prisma, e os repositórios participam sem receber a transação como parâmetro | Passar a transação explicitamente a cada repositório; usar uma biblioteca de terceiros |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
