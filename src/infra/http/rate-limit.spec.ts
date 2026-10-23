@@ -6,6 +6,8 @@ import { InMemoryTenantsRepository } from 'test/repositories/in-memory-tenants-r
 import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { FakeHasher } from 'test/cryptography/fake-hasher'
 import { FakeEncrypter } from 'test/cryptography/fake-encrypter'
+import { FakeTransactionManager } from 'test/transactions/fake-transaction-manager'
+import { TransactionManager } from '@/core/transactions/transaction-manager'
 import { TenantsRepository } from '@/domain/account/application/repositories/tenants-repository'
 import { UsersRepository } from '@/domain/account/application/repositories/users-repository'
 import { Hasher } from '@/domain/account/application/cryptography/hasher'
@@ -37,6 +39,7 @@ async function createApp(trustProxyHops = 0) {
       { provide: UsersRepository, useClass: InMemoryUsersRepository },
       { provide: Hasher, useClass: FakeHasher },
       { provide: Encrypter, useClass: FakeEncrypter },
+      { provide: TransactionManager, useClass: FakeTransactionManager },
     ],
   }).compile()
 

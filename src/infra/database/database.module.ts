@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
 import { EnvModule } from '@/infra/env/env.module'
 import { PrismaService } from './prisma/prisma.service'
+import { TransactionManager } from '@/core/transactions/transaction-manager'
+import { PrismaTransactionManager } from './prisma/prisma-transaction-manager'
 import { TenantsRepository } from '@/domain/account/application/repositories/tenants-repository'
 import { UsersRepository } from '@/domain/account/application/repositories/users-repository'
 import { PrismaTenantsRepository } from './prisma/repositories/prisma-tenants-repository'
@@ -20,6 +22,10 @@ import { PrismaServiceOrderHistoryRepository } from './prisma/repositories/prism
   imports: [EnvModule],
   providers: [
     PrismaService,
+    {
+      provide: TransactionManager,
+      useClass: PrismaTransactionManager,
+    },
     {
       provide: TenantsRepository,
       useClass: PrismaTenantsRepository,
@@ -51,6 +57,7 @@ import { PrismaServiceOrderHistoryRepository } from './prisma/repositories/prism
   ],
   exports: [
     PrismaService,
+    TransactionManager,
     TenantsRepository,
     UsersRepository,
     CustomersRepository,

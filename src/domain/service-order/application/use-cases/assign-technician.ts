@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { TransactionManager } from '@/core/transactions/transaction-manager'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
@@ -27,6 +28,7 @@ export class AssignTechnicianUseCase {
     private serviceOrdersRepository: ServiceOrdersRepository,
     private usersRepository: UsersRepository,
     private historyRepository: ServiceOrderHistoryRepository,
+    private transactionManager: TransactionManager,
   ) {}
 
   async execute({
@@ -56,8 +58,6 @@ export class AssignTechnicianUseCase {
 
     serviceOrder.technicianId = new UniqueEntityID(technicianId)
 
-    await this.serviceOrdersRepository.save(serviceOrder)
-
     const history = ServiceOrderHistory.create({
       serviceOrderId: new UniqueEntityID(serviceOrderId),
       userId: new UniqueEntityID(assignedById),
@@ -67,7 +67,10 @@ export class AssignTechnicianUseCase {
       newValue: technicianId,
     })
 
-    await this.historyRepository.create(history)
+    await this.transactionManager.run(async () => {
+      await this.serviceOrdersRepository.save(serviceOrder)
+      await this.historyRepository.create(history)
+    })
 
     return right({ serviceOrder })
   }

@@ -9,7 +9,7 @@ export class PrismaTenantsRepository implements TenantsRepository {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Tenant | null> {
-    const tenant = await this.prisma.tenant.findUnique({
+    const tenant = await this.prisma.client.tenant.findUnique({
       where: { id },
     })
 
@@ -21,7 +21,7 @@ export class PrismaTenantsRepository implements TenantsRepository {
   }
 
   async findByEmail(email: string): Promise<Tenant | null> {
-    const tenant = await this.prisma.tenant.findUnique({
+    const tenant = await this.prisma.client.tenant.findUnique({
       where: { email },
     })
 
@@ -33,7 +33,7 @@ export class PrismaTenantsRepository implements TenantsRepository {
   }
 
   async findBySlug(slug: string): Promise<Tenant | null> {
-    const tenant = await this.prisma.tenant.findUnique({
+    const tenant = await this.prisma.client.tenant.findUnique({
       where: { slug },
     })
 
@@ -47,7 +47,7 @@ export class PrismaTenantsRepository implements TenantsRepository {
   async create(tenant: Tenant): Promise<void> {
     const data = PrismaTenantMapper.toPrisma(tenant)
 
-    await this.prisma.tenant.create({
+    await this.prisma.client.tenant.create({
       data,
     })
   }
@@ -55,7 +55,7 @@ export class PrismaTenantsRepository implements TenantsRepository {
   async save(tenant: Tenant): Promise<void> {
     const data = PrismaTenantMapper.toPrisma(tenant)
 
-    await this.prisma.tenant.update({
+    await this.prisma.client.tenant.update({
       where: { id: data.id },
       data,
     })

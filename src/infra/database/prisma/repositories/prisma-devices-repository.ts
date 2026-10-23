@@ -10,7 +10,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<Device | null> {
-    const device = await this.prisma.device.findUnique({
+    const device = await this.prisma.client.device.findUnique({
       where: { id },
     })
 
@@ -26,7 +26,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
     customerId: string,
     { page, perPage = 20 }: PaginationParams,
   ): Promise<Device[]> {
-    const devices = await this.prisma.device.findMany({
+    const devices = await this.prisma.client.device.findMany({
       where: {
         tenantId,
         customerId,
@@ -43,7 +43,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
     tenantId: string,
     { page, perPage = 20 }: PaginationParams,
   ): Promise<Device[]> {
-    const devices = await this.prisma.device.findMany({
+    const devices = await this.prisma.client.device.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: perPage,
@@ -56,7 +56,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
   async create(device: Device): Promise<void> {
     const data = PrismaDeviceMapper.toPrisma(device)
 
-    await this.prisma.device.create({
+    await this.prisma.client.device.create({
       data,
     })
   }
@@ -64,14 +64,14 @@ export class PrismaDevicesRepository implements DevicesRepository {
   async save(device: Device): Promise<void> {
     const data = PrismaDeviceMapper.toPrisma(device)
 
-    await this.prisma.device.update({
+    await this.prisma.client.device.update({
       where: { id: data.id },
       data,
     })
   }
 
   async delete(device: Device): Promise<void> {
-    await this.prisma.device.delete({
+    await this.prisma.client.device.delete({
       where: { id: device.id.toString() },
     })
   }

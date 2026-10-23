@@ -1,6 +1,7 @@
 import { InMemoryTenantsRepository } from 'test/repositories/in-memory-tenants-repository'
 import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { FakeHasher } from 'test/cryptography/fake-hasher'
+import { FakeTransactionManager } from 'test/transactions/fake-transaction-manager'
 import { makeTenant } from 'test/factories/make-tenant'
 import { makeUser } from 'test/factories/make-user'
 import { Slug } from '../../enterprise/entities/value-objects/slug'
@@ -11,6 +12,8 @@ import { TenantSlugAlreadyInUseError } from './errors/tenant-slug-already-in-use
 
 let tenantsRepository: InMemoryTenantsRepository
 let usersRepository: InMemoryUsersRepository
+let hasher: FakeHasher
+let transactionManager: FakeTransactionManager
 let sut: RegisterTenantUseCase
 
 const request = {
@@ -25,10 +28,13 @@ describe('Register Tenant', () => {
   beforeEach(() => {
     tenantsRepository = new InMemoryTenantsRepository()
     usersRepository = new InMemoryUsersRepository()
+    hasher = new FakeHasher()
+    transactionManager = new FakeTransactionManager()
     sut = new RegisterTenantUseCase(
       tenantsRepository,
       usersRepository,
-      new FakeHasher(),
+      hasher,
+      transactionManager,
     )
   })
 
@@ -103,5 +109,38 @@ describe('Register Tenant', () => {
 
     expect(result.isRight()).toBe(true)
     expect(usersRepository.items).toHaveLength(2)
+  })
+  it('should create the tenant and its owner in a single transaction', async () => {
+    const insideTransaction: boolean[] = []
+    const createTenant = tenantsRepository.create.bind(tenantsRepository)
+    const createUser = usersRepository.create.bind(usersRepository)
+    jest
+      .spyOn(tenantsRepository, 'create')
+      .mockImplementation(async (tenant) => {
+        insideTransaction.push(transactionManager.isRunning)
+        return createTenant(tenant)
+      })
+    jest.spyOn(usersRepository, 'create').mockImplementation(async (user) => {
+      insideTransaction.push(transactionManager.isRunning)
+      return createUser(user)
+    })
+
+    await sut.execute(request)
+
+    expect(transactionManager.runs).toBe(1)
+    expect(insideTransaction).toEqual([true, true])
+  })
+
+  it('should hash the password before opening the transaction', async () => {
+    let hashedInsideTransaction: boolean | undefined
+    const hash = hasher.hash.bind(hasher)
+    jest.spyOn(hasher, 'hash').mockImplementation(async (plain) => {
+      hashedInsideTransaction = transactionManager.isRunning
+      return hash(plain)
+    })
+
+    await sut.execute(request)
+
+    expect(hashedInsideTransaction).toBe(false)
   })
 })

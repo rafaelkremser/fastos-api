@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { TransactionManager } from '@/core/transactions/transaction-manager'
 import { Tenant } from '../../enterprise/entities/tenant'
 import { User } from '../../enterprise/entities/user'
 import { Slug } from '../../enterprise/entities/value-objects/slug'
@@ -37,6 +38,7 @@ export class RegisterTenantUseCase {
     private tenantsRepository: TenantsRepository,
     private usersRepository: UsersRepository,
     private hasher: Hasher,
+    private transactionManager: TransactionManager,
   ) {}
 
   async execute({
@@ -80,8 +82,6 @@ export class RegisterTenantUseCase {
       phone: tenantPhone ?? null,
     })
 
-    await this.tenantsRepository.create(tenant)
-
     const hashedPassword = await this.hasher.hash(ownerPassword)
 
     const user = User.create({
@@ -92,7 +92,11 @@ export class RegisterTenantUseCase {
       role: 'OWNER',
     })
 
-    await this.usersRepository.create(user)
+    // A tenant without its owner would be unusable, so both writes or neither
+    await this.transactionManager.run(async () => {
+      await this.tenantsRepository.create(tenant)
+      await this.usersRepository.create(user)
+    })
 
     return right({
       tenant,

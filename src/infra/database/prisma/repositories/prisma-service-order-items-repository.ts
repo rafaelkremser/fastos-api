@@ -11,7 +11,7 @@ export class PrismaServiceOrderItemsRepository
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<ServiceOrderItem | null> {
-    const item = await this.prisma.serviceOrderItem.findUnique({
+    const item = await this.prisma.client.serviceOrderItem.findUnique({
       where: { id },
     })
 
@@ -25,7 +25,7 @@ export class PrismaServiceOrderItemsRepository
   async findManyByServiceOrderId(
     serviceOrderId: string,
   ): Promise<ServiceOrderItem[]> {
-    const items = await this.prisma.serviceOrderItem.findMany({
+    const items = await this.prisma.client.serviceOrderItem.findMany({
       where: { serviceOrderId },
       orderBy: { createdAt: 'asc' },
     })
@@ -36,7 +36,7 @@ export class PrismaServiceOrderItemsRepository
   async create(item: ServiceOrderItem): Promise<void> {
     const data = PrismaServiceOrderItemMapper.toPrisma(item)
 
-    await this.prisma.serviceOrderItem.create({
+    await this.prisma.client.serviceOrderItem.create({
       data,
     })
   }
@@ -44,7 +44,7 @@ export class PrismaServiceOrderItemsRepository
   async createMany(items: ServiceOrderItem[]): Promise<void> {
     const data = items.map(PrismaServiceOrderItemMapper.toPrisma)
 
-    await this.prisma.serviceOrderItem.createMany({
+    await this.prisma.client.serviceOrderItem.createMany({
       data,
     })
   }
@@ -52,14 +52,14 @@ export class PrismaServiceOrderItemsRepository
   async save(item: ServiceOrderItem): Promise<void> {
     const data = PrismaServiceOrderItemMapper.toPrisma(item)
 
-    await this.prisma.serviceOrderItem.update({
+    await this.prisma.client.serviceOrderItem.update({
       where: { id: data.id },
       data,
     })
   }
 
   async delete(item: ServiceOrderItem): Promise<void> {
-    await this.prisma.serviceOrderItem.delete({
+    await this.prisma.client.serviceOrderItem.delete({
       where: { id: item.id.toString() },
     })
   }
@@ -67,13 +67,13 @@ export class PrismaServiceOrderItemsRepository
   async deleteMany(items: ServiceOrderItem[]): Promise<void> {
     const ids = items.map((item) => item.id.toString())
 
-    await this.prisma.serviceOrderItem.deleteMany({
+    await this.prisma.client.serviceOrderItem.deleteMany({
       where: { id: { in: ids } },
     })
   }
 
   async deleteManyByServiceOrderId(serviceOrderId: string): Promise<void> {
-    await this.prisma.serviceOrderItem.deleteMany({
+    await this.prisma.client.serviceOrderItem.deleteMany({
       where: { serviceOrderId },
     })
   }

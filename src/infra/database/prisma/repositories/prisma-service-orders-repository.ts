@@ -14,7 +14,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   constructor(private prisma: PrismaService) {}
 
   async findById(id: string): Promise<ServiceOrder | null> {
-    const serviceOrder = await this.prisma.serviceOrder.findUnique({
+    const serviceOrder = await this.prisma.client.serviceOrder.findUnique({
       where: { id },
     })
 
@@ -29,7 +29,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
     tenantId: string,
     number: number,
   ): Promise<ServiceOrder | null> {
-    const serviceOrder = await this.prisma.serviceOrder.findFirst({
+    const serviceOrder = await this.prisma.client.serviceOrder.findFirst({
       where: {
         tenantId,
         number,
@@ -48,7 +48,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
     filters: ServiceOrderFilters,
     { page, perPage = 20 }: PaginationParams,
   ): Promise<ServiceOrder[]> {
-    const serviceOrders = await this.prisma.serviceOrder.findMany({
+    const serviceOrders = await this.prisma.client.serviceOrder.findMany({
       where: {
         tenantId,
         ...(filters.status && { status: filters.status as any }),
@@ -71,7 +71,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   }
 
   async countByStatus(tenantId: string): Promise<Record<string, number>> {
-    const counts = await this.prisma.serviceOrder.groupBy({
+    const counts = await this.prisma.client.serviceOrder.groupBy({
       by: ['status'],
       where: { tenantId },
       _count: { status: true },
@@ -87,7 +87,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   }
 
   async getNextNumber(tenantId: string): Promise<number> {
-    const lastOrder = await this.prisma.serviceOrder.findFirst({
+    const lastOrder = await this.prisma.client.serviceOrder.findFirst({
       where: { tenantId },
       orderBy: { number: 'desc' },
       select: { number: true },
@@ -99,7 +99,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   async create(serviceOrder: ServiceOrder): Promise<void> {
     const data = PrismaServiceOrderMapper.toPrisma(serviceOrder)
 
-    await this.prisma.serviceOrder.create({
+    await this.prisma.client.serviceOrder.create({
       data,
     })
 
@@ -109,7 +109,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   async save(serviceOrder: ServiceOrder): Promise<void> {
     const data = PrismaServiceOrderMapper.toPrisma(serviceOrder)
 
-    await this.prisma.serviceOrder.update({
+    await this.prisma.client.serviceOrder.update({
       where: { id: data.id },
       data,
     })
@@ -118,7 +118,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   }
 
   async delete(serviceOrder: ServiceOrder): Promise<void> {
-    await this.prisma.serviceOrder.delete({
+    await this.prisma.client.serviceOrder.delete({
       where: { id: serviceOrder.id.toString() },
     })
   }
