@@ -21,7 +21,7 @@ export abstract class ServiceOrdersRepository {
     params: PaginationParams,
   ): Promise<ServiceOrder[]>
   abstract countByStatus(tenantId: string): Promise<Record<string, number>>
-  abstract getNextNumber(tenantId: string): Promise<number>
+  abstract reserveNextNumber(tenantId: string): Promise<number>
   abstract create(serviceOrder: ServiceOrder): Promise<void>
   abstract save(serviceOrder: ServiceOrder): Promise<void>
   abstract delete(serviceOrder: ServiceOrder): Promise<void>

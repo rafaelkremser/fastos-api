@@ -2,7 +2,7 @@
 
 Plano para levar a API até a produção. É a referência única do que já foi feito, do que vem a seguir e por quê.
 
-**Última atualização:** 2026-10-23
+**Última atualização:** 2026-10-27
 
 ## Como usar este documento
 
@@ -19,7 +19,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | Fase | Feitos | Total |
 |---|:-:|:-:|
 | P0: bloqueadores de deploy | 8 | 8 |
-| P1: quebra ou vaza em produção | 3 | 4 |
+| P1: quebra ou vaza em produção | 4 | 4 |
 | P2: operação | 0 | 7 |
 | P3: escala e LGPD | 0 | 5 |
 
@@ -68,7 +68,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P1-1 | Refresh token (acesso de 15 min, renovação de 7 dias) | Feito | [PR #9](https://github.com/rafaelkremser/fastos-api/pull/9) |
 | P1-2 | Transações nos fluxos que gravam mais de um registro | Feito | [PR #10](https://github.com/rafaelkremser/fastos-api/pull/10) |
 | P1-3 | Itens da OS carregados junto com a OS | Feito | [PR #11](https://github.com/rafaelkremser/fastos-api/pull/11) |
-| P1-4 | Numeração da OS sem duplicar | **Próximo** | |
+| P1-4 | Numeração da OS sem duplicar | Feito | [PR #12](https://github.com/rafaelkremser/fastos-api/pull/12) |
 
 **P1-1: refresh token.** Feito.
 - **Login:** devolve dois tokens no corpo da resposta: o de acesso (`access_token`, 15 minutos) e o de renovação (`refresh_token`, 7 dias). Antes havia um só, de 7 dias.
@@ -93,13 +93,18 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - **Resposta:** `GET /service-orders/:id` e a listagem passam a trazer `items` e `totalItemsCost`.
 - **Testado contra o banco real:** no código anterior, uma OS com 2 itens gravados voltava com 0 itens e total 0; agora volta com os 2 e o total certo. Se a gravação de um item falha, a alteração da OS também é desfeita.
 
-**P1-4: numeração da OS.** O próximo número é calculado como "maior número + 1", fora de uma transação. Duas OS criadas ao mesmo tempo na mesma loja recebem o mesmo número, e a segunda falha na restrição de unicidade do banco.
+**P1-4: numeração da OS.** Feito.
+- **O problema:** o próximo número era calculado como "maior número + 1", fora de uma transação. Duas OS criadas ao mesmo tempo na mesma loja recebiam o mesmo número, e a segunda falhava na restrição de unicidade do banco (erro 500).
+- **Contador por loja:** a tabela `service_order_counters` guarda o último número dado em cada loja. Criar uma OS incrementa o contador e grava a OS na mesma transação. O banco trava o contador da loja até o fim da transação, então duas OS simultâneas esperam uma pela outra em vez de ler o mesmo número. Lojas diferentes não esperam umas pelas outras.
+- **Sem buracos:** se a criação falha depois de pegar o número, a transação desfaz o incremento e o número volta para a próxima OS.
+- **Migration:** cria o contador de cada loja a partir do maior número que ela já tem. Lojas sem OS ganham o contador na primeira OS.
+- **Testado contra o banco real** (num branch temporário copiado do `dev`): no código anterior, de 10 OS criadas ao mesmo tempo, só 2 deram certo; agora saem as 10, numeradas de 1 a 10. Medido daqui, as 10 levaram 0,7 s no total, porque são gravadas uma de cada vez.
 
 ## P2: operação
 
 | # | Item | Status |
 |---|---|---|
-| P2-1 | Definir a hospedagem da API | Pendente |
+| P2-1 | Definir a hospedagem da API | **Próximo** |
 | P2-2 | Logs estruturados (Pino), com um ID por requisição | Pendente |
 | P2-3 | `GET /health` para o host monitorar a API | Pendente |
 | P2-4 | Monitoramento de erros (Sentry) | Pendente |
@@ -119,7 +124,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 ## Limpeza contínua
 
-- O `README.md` e o `NEXT_STEPS.md` descrevem rotas e recursos que não existem, como Dashboard e `/auth/login`.
+- O `README.md` descreve rotas e recursos que não existem, como Dashboard e `/auth/login`.
 - O ESLint não tem arquivo de configuração, então `npm run lint` não funciona.
 - O `.prettierrc` pede ponto e vírgula e linhas de 100, mas o código não usa ponto e vírgula e quebra em 80. Rodar o Prettier no projeto inteiro reformata arquivos sem motivo.
 - `class-transformer` e `class-validator` estão instalados sem uso; a validação é feita com Zod.
@@ -191,6 +196,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-22 | A renovação confere no banco usuário, loja e papel | Desativar alguém tem efeito em até 15 minutos, mesmo sem revogação | Validar só a assinatura do token |
 | 2026-10-22 | Transações por um `TransactionManager` no domínio, com a transação aberta guardada no contexto da requisição (`AsyncLocalStorage`) | O domínio não conhece o Prisma, e os repositórios participam sem receber a transação como parâmetro | Passar a transação explicitamente a cada repositório; usar uma biblioteca de terceiros |
 | 2026-10-23 | Itens lidos e gravados só pela OS: o repositório da OS grava a OS e as mudanças da lista de itens na mesma transação | A OS calcula os totais a partir dos itens, e nenhum item é gravado por fora dela | Casos de uso gravando direto no repositório de itens, como antes |
+| 2026-10-27 | Número da OS vem de um contador por loja, incrementado na mesma transação que grava a OS | Atômico e sem buracos; só as OS da mesma loja esperam umas pelas outras | Tentar de novo quando o número repetir; `MAX + 1` com bloqueio da loja inteira; uma sequência do Postgres por loja |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 

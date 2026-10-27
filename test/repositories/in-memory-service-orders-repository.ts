@@ -9,6 +9,7 @@ import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service
 
 export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository {
   public items: ServiceOrder[] = []
+  public lastNumbers = new Map<string, number>()
 
   constructor(
     private serviceOrderItemsRepository: ServiceOrderItemsRepository,
@@ -58,12 +59,10 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
       }, {})
   }
 
-  async getNextNumber(tenantId: string) {
-    const numbers = this.items
-      .filter((item) => item.tenantId.toString() === tenantId)
-      .map((item) => item.number)
-
-    return Math.max(0, ...numbers) + 1
+  async reserveNextNumber(tenantId: string) {
+    const number = (this.lastNumbers.get(tenantId) ?? 0) + 1
+    this.lastNumbers.set(tenantId, number)
+    return number
   }
 
   async create(serviceOrder: ServiceOrder) {

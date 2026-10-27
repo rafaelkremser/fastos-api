@@ -21,10 +21,11 @@ model Tenant {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  users         User[]
-  customers     Customer[]
-  devices       Device[]
-  serviceOrders ServiceOrder[]
+  users               User[]
+  customers           Customer[]
+  devices             Device[]
+  serviceOrders       ServiceOrder[]
+  serviceOrderCounter ServiceOrderCounter?
 
   @@map("tenants")
 }
@@ -180,6 +181,17 @@ enum ItemType {
   SERVICE
   PART
   OTHER
+}
+
+// Last service order number given in each tenant. Incrementing it locks the
+// row until the transaction ends, so concurrent orders get distinct numbers
+model ServiceOrderCounter {
+  tenantId   String @id @map("tenant_id")
+  lastNumber Int    @map("last_number")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("service_order_counters")
 }
 
 model ServiceOrderItem {
