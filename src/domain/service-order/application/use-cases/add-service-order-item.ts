@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 import { ServiceOrderItem, ItemType } from '../../enterprise/entities/service-order-item'
 import { ServiceOrdersRepository } from '../repositories/service-orders-repository'
-import { ServiceOrderItemsRepository } from '../repositories/service-order-items-repository'
 
 interface AddServiceOrderItemUseCaseRequest {
   tenantId: string
@@ -23,10 +21,7 @@ type AddServiceOrderItemUseCaseResponse = Either<
 
 @Injectable()
 export class AddServiceOrderItemUseCase {
-  constructor(
-    private serviceOrdersRepository: ServiceOrdersRepository,
-    private serviceOrderItemsRepository: ServiceOrderItemsRepository,
-  ) {}
+  constructor(private serviceOrdersRepository: ServiceOrdersRepository) {}
 
   async execute({
     tenantId,
@@ -48,14 +43,16 @@ export class AddServiceOrderItemUseCase {
     }
 
     const item = ServiceOrderItem.create({
-      serviceOrderId: new UniqueEntityID(serviceOrderId),
+      serviceOrderId: serviceOrder.id,
       type,
       description,
       quantity,
       unitPrice,
     })
 
-    await this.serviceOrderItemsRepository.create(item)
+    serviceOrder.addItem(item)
+
+    await this.serviceOrdersRepository.save(serviceOrder)
 
     return right({ item })
   }

@@ -1,21 +1,31 @@
 import { Injectable } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PaginationParams } from '@/core/repositories/pagination-params'
 import {
   ServiceOrdersRepository,
   ServiceOrderFilters,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
+import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
 import { PrismaService } from '../prisma.service'
 import { PrismaServiceOrderMapper } from '../mappers/prisma-service-order-mapper'
 import { DomainEvents } from '@/core/events/domain-events'
 
+const withItems = {
+  items: { orderBy: { createdAt: 'asc' } },
+} satisfies Prisma.ServiceOrderInclude
+
 @Injectable()
 export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private serviceOrderItemsRepository: ServiceOrderItemsRepository,
+  ) {}
 
   async findById(id: string): Promise<ServiceOrder | null> {
     const serviceOrder = await this.prisma.client.serviceOrder.findUnique({
       where: { id },
+      include: withItems,
     })
 
     if (!serviceOrder) {
@@ -34,6 +44,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
         tenantId,
         number,
       },
+      include: withItems,
     })
 
     if (!serviceOrder) {
@@ -65,6 +76,7 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
       orderBy: { createdAt: 'desc' },
       take: perPage,
       skip: (page - 1) * perPage,
+      include: withItems,
     })
 
     return serviceOrders.map(PrismaServiceOrderMapper.toDomain)
@@ -99,8 +111,14 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   async create(serviceOrder: ServiceOrder): Promise<void> {
     const data = PrismaServiceOrderMapper.toPrisma(serviceOrder)
 
-    await this.prisma.client.serviceOrder.create({
-      data,
+    // The order and its items are one unit: saved together or not at all
+    await this.prisma.runInTransaction(async () => {
+      await this.prisma.client.serviceOrder.create({
+        data,
+      })
+      await this.serviceOrderItemsRepository.createMany(
+        serviceOrder.items.getItems(),
+      )
     })
 
     DomainEvents.dispatchEventsForAggregate(serviceOrder.id)
@@ -109,9 +127,17 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   async save(serviceOrder: ServiceOrder): Promise<void> {
     const data = PrismaServiceOrderMapper.toPrisma(serviceOrder)
 
-    await this.prisma.client.serviceOrder.update({
-      where: { id: data.id },
-      data,
+    await this.prisma.runInTransaction(async () => {
+      await this.prisma.client.serviceOrder.update({
+        where: { id: data.id },
+        data,
+      })
+      await this.serviceOrderItemsRepository.createMany(
+        serviceOrder.items.getNewItems(),
+      )
+      await this.serviceOrderItemsRepository.deleteMany(
+        serviceOrder.items.getRemovedItems(),
+      )
     })
 
     DomainEvents.dispatchEventsForAggregate(serviceOrder.id)

@@ -2,6 +2,7 @@ import { AggregateRoot } from '@/core/entities/aggregate-root'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
 import { ServiceOrderItemList } from './service-order-item-list'
+import { ServiceOrderItem } from './service-order-item'
 import { ServiceOrderStatusChangedEvent } from '../events/service-order-status-changed-event'
 import { ServiceOrderCreatedEvent } from '../events/service-order-created-event'
 
@@ -239,6 +240,17 @@ export class ServiceOrder extends AggregateRoot<ServiceOrderProps> {
 
   set items(items: ServiceOrderItemList) {
     this.props.items = items
+    this.touch()
+  }
+
+  // The repository persists the items the list tracks as added or removed
+  addItem(item: ServiceOrderItem) {
+    this.props.items.add(item)
+    this.touch()
+  }
+
+  removeItem(item: ServiceOrderItem) {
+    this.props.items.remove(item)
     this.touch()
   }
 

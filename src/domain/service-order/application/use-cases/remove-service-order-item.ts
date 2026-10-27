@@ -3,7 +3,6 @@ import { Either, left, right } from '@/core/either'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 import { ServiceOrdersRepository } from '../repositories/service-orders-repository'
-import { ServiceOrderItemsRepository } from '../repositories/service-order-items-repository'
 
 interface RemoveServiceOrderItemUseCaseRequest {
   tenantId: string
@@ -18,10 +17,7 @@ type RemoveServiceOrderItemUseCaseResponse = Either<
 
 @Injectable()
 export class RemoveServiceOrderItemUseCase {
-  constructor(
-    private serviceOrdersRepository: ServiceOrdersRepository,
-    private serviceOrderItemsRepository: ServiceOrderItemsRepository,
-  ) {}
+  constructor(private serviceOrdersRepository: ServiceOrdersRepository) {}
 
   async execute({
     tenantId,
@@ -39,17 +35,18 @@ export class RemoveServiceOrderItemUseCase {
       return left(new NotAllowedError())
     }
 
-    const item = await this.serviceOrderItemsRepository.findById(itemId)
+    // An item of another order is simply not among this order's items
+    const item = serviceOrder.items
+      .getItems()
+      .find((item) => item.id.toString() === itemId)
 
     if (!item) {
       return left(new ResourceNotFoundError())
     }
 
-    if (item.serviceOrderId.toString() !== serviceOrderId) {
-      return left(new NotAllowedError())
-    }
+    serviceOrder.removeItem(item)
 
-    await this.serviceOrderItemsRepository.delete(item)
+    await this.serviceOrdersRepository.save(serviceOrder)
 
     return right(null)
   }

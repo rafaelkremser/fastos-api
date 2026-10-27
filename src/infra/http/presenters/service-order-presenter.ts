@@ -1,4 +1,5 @@
 import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
+import { ServiceOrderItemPresenter } from './service-order-item-presenter'
 
 export class ServiceOrderPresenter {
   static toHTTP(serviceOrder: ServiceOrder) {
@@ -21,6 +22,10 @@ export class ServiceOrderPresenter {
       estimatedCost: serviceOrder.estimatedCost,
       finalCost: serviceOrder.finalCost,
       discount: serviceOrder.discount,
+      items: serviceOrder.items
+        .getItems()
+        .map(ServiceOrderItemPresenter.toHTTP),
+      totalItemsCost: serviceOrder.totalItemsCost,
       totalWithDiscount: serviceOrder.totalWithDiscount,
       internalNotes: serviceOrder.internalNotes,
       customerNotes: serviceOrder.customerNotes,

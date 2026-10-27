@@ -4,10 +4,15 @@ import {
   ServiceOrderFilters,
   ServiceOrdersRepository,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
+import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
 
 export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository {
   public items: ServiceOrder[] = []
+
+  constructor(
+    private serviceOrderItemsRepository: ServiceOrderItemsRepository,
+  ) {}
 
   async findById(id: string) {
     return this.items.find((item) => item.id.toString() === id) ?? null
@@ -63,6 +68,9 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
 
   async create(serviceOrder: ServiceOrder) {
     this.items.push(serviceOrder)
+    await this.serviceOrderItemsRepository.createMany(
+      serviceOrder.items.getItems(),
+    )
     DomainEvents.dispatchEventsForAggregate(serviceOrder.id)
   }
 
@@ -71,6 +79,12 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
       item.id.equals(serviceOrder.id),
     )
     this.items[index] = serviceOrder
+    await this.serviceOrderItemsRepository.createMany(
+      serviceOrder.items.getNewItems(),
+    )
+    await this.serviceOrderItemsRepository.deleteMany(
+      serviceOrder.items.getRemovedItems(),
+    )
     DomainEvents.dispatchEventsForAggregate(serviceOrder.id)
   }
 
