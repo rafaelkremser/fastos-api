@@ -10,38 +10,11 @@ export class PrismaServiceOrderItemsRepository
 {
   constructor(private prisma: PrismaService) {}
 
-  async findById(id: string): Promise<ServiceOrderItem | null> {
-    const item = await this.prisma.client.serviceOrderItem.findUnique({
-      where: { id },
-    })
-
-    if (!item) {
-      return null
+  async createMany(items: ServiceOrderItem[]): Promise<void> {
+    if (items.length === 0) {
+      return
     }
 
-    return PrismaServiceOrderItemMapper.toDomain(item)
-  }
-
-  async findManyByServiceOrderId(
-    serviceOrderId: string,
-  ): Promise<ServiceOrderItem[]> {
-    const items = await this.prisma.client.serviceOrderItem.findMany({
-      where: { serviceOrderId },
-      orderBy: { createdAt: 'asc' },
-    })
-
-    return items.map(PrismaServiceOrderItemMapper.toDomain)
-  }
-
-  async create(item: ServiceOrderItem): Promise<void> {
-    const data = PrismaServiceOrderItemMapper.toPrisma(item)
-
-    await this.prisma.client.serviceOrderItem.create({
-      data,
-    })
-  }
-
-  async createMany(items: ServiceOrderItem[]): Promise<void> {
     const data = items.map(PrismaServiceOrderItemMapper.toPrisma)
 
     await this.prisma.client.serviceOrderItem.createMany({
@@ -49,32 +22,15 @@ export class PrismaServiceOrderItemsRepository
     })
   }
 
-  async save(item: ServiceOrderItem): Promise<void> {
-    const data = PrismaServiceOrderItemMapper.toPrisma(item)
-
-    await this.prisma.client.serviceOrderItem.update({
-      where: { id: data.id },
-      data,
-    })
-  }
-
-  async delete(item: ServiceOrderItem): Promise<void> {
-    await this.prisma.client.serviceOrderItem.delete({
-      where: { id: item.id.toString() },
-    })
-  }
-
   async deleteMany(items: ServiceOrderItem[]): Promise<void> {
+    if (items.length === 0) {
+      return
+    }
+
     const ids = items.map((item) => item.id.toString())
 
     await this.prisma.client.serviceOrderItem.deleteMany({
       where: { id: { in: ids } },
-    })
-  }
-
-  async deleteManyByServiceOrderId(serviceOrderId: string): Promise<void> {
-    await this.prisma.client.serviceOrderItem.deleteMany({
-      where: { serviceOrderId },
     })
   }
 }

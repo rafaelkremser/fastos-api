@@ -1,4 +1,5 @@
 import { InMemoryServiceOrdersRepository } from 'test/repositories/in-memory-service-orders-repository'
+import { InMemoryServiceOrderItemsRepository } from 'test/repositories/in-memory-service-order-items-repository'
 import { InMemoryServiceOrderHistoryRepository } from 'test/repositories/in-memory-service-order-history-repository'
 import { InMemoryUsersRepository } from 'test/repositories/in-memory-users-repository'
 import { FakeTransactionManager } from 'test/transactions/fake-transaction-manager'
@@ -28,7 +29,9 @@ function request(serviceOrderId: UniqueEntityID, technicianId: UniqueEntityID) {
 
 describe('Assign Technician', () => {
   beforeEach(() => {
-    serviceOrdersRepository = new InMemoryServiceOrdersRepository()
+    serviceOrdersRepository = new InMemoryServiceOrdersRepository(
+      new InMemoryServiceOrderItemsRepository(),
+    )
     usersRepository = new InMemoryUsersRepository()
     historyRepository = new InMemoryServiceOrderHistoryRepository()
     transactionManager = new FakeTransactionManager()

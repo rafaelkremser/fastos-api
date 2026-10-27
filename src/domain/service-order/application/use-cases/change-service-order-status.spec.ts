@@ -1,4 +1,5 @@
 import { InMemoryServiceOrdersRepository } from 'test/repositories/in-memory-service-orders-repository'
+import { InMemoryServiceOrderItemsRepository } from 'test/repositories/in-memory-service-order-items-repository'
 import { InMemoryServiceOrderHistoryRepository } from 'test/repositories/in-memory-service-order-history-repository'
 import { FakeTransactionManager } from 'test/transactions/fake-transaction-manager'
 import { makeServiceOrder } from 'test/factories/make-service-order'
@@ -26,7 +27,9 @@ function request(serviceOrderId: UniqueEntityID) {
 
 describe('Change Service Order Status', () => {
   beforeEach(() => {
-    serviceOrdersRepository = new InMemoryServiceOrdersRepository()
+    serviceOrdersRepository = new InMemoryServiceOrdersRepository(
+      new InMemoryServiceOrderItemsRepository(),
+    )
     historyRepository = new InMemoryServiceOrderHistoryRepository()
     transactionManager = new FakeTransactionManager()
     sut = new ChangeServiceOrderStatusUseCase(

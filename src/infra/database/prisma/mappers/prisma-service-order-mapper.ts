@@ -1,4 +1,8 @@
-import { Prisma, ServiceOrder as PrismaServiceOrder } from '@prisma/client'
+import {
+  Prisma,
+  ServiceOrder as PrismaServiceOrder,
+  ServiceOrderItem as PrismaServiceOrderItem,
+} from '@prisma/client'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import {
   ServiceOrder,
@@ -6,9 +10,15 @@ import {
   OrderPriority,
 } from '@/domain/service-order/enterprise/entities/service-order'
 import { ServiceOrderItemList } from '@/domain/service-order/enterprise/entities/service-order-item-list'
+import { PrismaServiceOrderItemMapper } from './prisma-service-order-item-mapper'
+
+// The totals depend on the items, so an order is never built without them
+export type PrismaServiceOrderWithItems = PrismaServiceOrder & {
+  items: PrismaServiceOrderItem[]
+}
 
 export class PrismaServiceOrderMapper {
-  static toDomain(raw: PrismaServiceOrder): ServiceOrder {
+  static toDomain(raw: PrismaServiceOrderWithItems): ServiceOrder {
     return ServiceOrder.create(
       {
         tenantId: new UniqueEntityID(raw.tenantId),
@@ -35,7 +45,9 @@ export class PrismaServiceOrderMapper {
         customerNotes: raw.customerNotes,
         warrantyDays: raw.warrantyDays ?? 90,
         warrantyUntil: raw.warrantyUntil,
-        items: new ServiceOrderItemList(),
+        items: new ServiceOrderItemList(
+          raw.items.map(PrismaServiceOrderItemMapper.toDomain),
+        ),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
