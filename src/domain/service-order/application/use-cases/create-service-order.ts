@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { TransactionManager } from '@/core/transactions/transaction-manager'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { ServiceOrder, OrderPriority } from '../../enterprise/entities/service-order'
@@ -29,6 +30,7 @@ export class CreateServiceOrderUseCase {
     private serviceOrdersRepository: ServiceOrdersRepository,
     private customersRepository: CustomersRepository,
     private devicesRepository: DevicesRepository,
+    private transactionManager: TransactionManager,
   ) {}
 
   async execute({
@@ -53,30 +55,37 @@ export class CreateServiceOrderUseCase {
       return left(new ResourceNotFoundError())
     }
 
-    const number = await this.serviceOrdersRepository.getNextNumber(tenantId)
+    // Concurrent orders of the tenant wait for each other here, and a failed
+    // creation gives the number back
+    const serviceOrder = await this.transactionManager.run(async () => {
+      const number =
+        await this.serviceOrdersRepository.reserveNextNumber(tenantId)
 
-    const serviceOrder = ServiceOrder.create({
-      tenantId: new UniqueEntityID(tenantId),
-      customerId: new UniqueEntityID(customerId),
-      deviceId: new UniqueEntityID(deviceId),
-      createdById: new UniqueEntityID(createdById),
-      number,
-      problemDescription,
-      priority,
-      estimatedDate: estimatedDate ?? null,
-      internalNotes: internalNotes ?? null,
-      technicianId: null,
-      diagnosis: null,
-      solution: null,
-      completedDate: null,
-      deliveredDate: null,
-      estimatedCost: null,
-      finalCost: null,
-      customerNotes: null,
-      warrantyUntil: null,
+      const serviceOrder = ServiceOrder.create({
+        tenantId: new UniqueEntityID(tenantId),
+        customerId: new UniqueEntityID(customerId),
+        deviceId: new UniqueEntityID(deviceId),
+        createdById: new UniqueEntityID(createdById),
+        number,
+        problemDescription,
+        priority,
+        estimatedDate: estimatedDate ?? null,
+        internalNotes: internalNotes ?? null,
+        technicianId: null,
+        diagnosis: null,
+        solution: null,
+        completedDate: null,
+        deliveredDate: null,
+        estimatedCost: null,
+        finalCost: null,
+        customerNotes: null,
+        warrantyUntil: null,
+      })
+
+      await this.serviceOrdersRepository.create(serviceOrder)
+
+      return serviceOrder
     })
-
-    await this.serviceOrdersRepository.create(serviceOrder)
 
     return right({ serviceOrder })
   }

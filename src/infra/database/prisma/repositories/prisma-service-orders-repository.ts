@@ -98,14 +98,18 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
     )
   }
 
-  async getNextNumber(tenantId: string): Promise<number> {
-    const lastOrder = await this.prisma.client.serviceOrder.findFirst({
+  async reserveNextNumber(tenantId: string): Promise<number> {
+    // Prisma runs this as a single INSERT ... ON CONFLICT DO UPDATE, which
+    // locks the counter until the transaction ends: concurrent orders wait
+    // instead of reading the same number. Keep it a plain upsert (no nested
+    // writes or relation reads), or Prisma splits it into separate queries
+    const counter = await this.prisma.client.serviceOrderCounter.upsert({
       where: { tenantId },
-      orderBy: { number: 'desc' },
-      select: { number: true },
+      create: { tenantId, lastNumber: 1 },
+      update: { lastNumber: { increment: 1 } },
     })
 
-    return (lastOrder?.number ?? 0) + 1
+    return counter.lastNumber
   }
 
   async create(serviceOrder: ServiceOrder): Promise<void> {
