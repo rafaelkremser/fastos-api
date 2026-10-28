@@ -6,16 +6,19 @@ import { ServiceOrderItem } from './service-order-item'
 import { ServiceOrderStatusChangedEvent } from '../events/service-order-status-changed-event'
 import { ServiceOrderCreatedEvent } from '../events/service-order-created-event'
 
-export type OrderStatus =
-  | 'OPEN'
-  | 'IN_ANALYSIS'
-  | 'WAITING_APPROVAL'
-  | 'APPROVED'
-  | 'IN_PROGRESS'
-  | 'WAITING_PARTS'
-  | 'COMPLETED'
-  | 'DELIVERED'
-  | 'CANCELLED'
+export const ORDER_STATUSES = [
+  'OPEN',
+  'IN_ANALYSIS',
+  'WAITING_APPROVAL',
+  'APPROVED',
+  'IN_PROGRESS',
+  'WAITING_PARTS',
+  'COMPLETED',
+  'DELIVERED',
+  'CANCELLED',
+] as const
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
 export type OrderPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 

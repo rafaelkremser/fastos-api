@@ -1,7 +1,9 @@
 import { PaginationParams } from '@/core/repositories/pagination-params'
 import { ServiceOrder } from '../../enterprise/entities/service-order'
+import { ServiceOrderSummary } from '../../enterprise/entities/value-objects/service-order-summary'
 
 export interface ServiceOrderFilters {
+  number?: number
   status?: string
   technicianId?: string
   customerId?: string
@@ -16,12 +18,12 @@ export abstract class ServiceOrdersRepository {
     tenantId: string,
     number: number,
   ): Promise<ServiceOrder | null>
-  abstract findMany(
+  abstract findManySummaries(
     tenantId: string,
     filters: ServiceOrderFilters,
     params: PaginationParams,
-  ): Promise<ServiceOrder[]>
-  // Counts what findMany finds with the same filters, across all pages
+  ): Promise<ServiceOrderSummary[]>
+  // Counts what findManySummaries finds with the same filters, across all pages
   abstract count(
     tenantId: string,
     filters: ServiceOrderFilters,

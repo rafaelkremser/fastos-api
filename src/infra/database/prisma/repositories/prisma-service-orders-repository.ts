@@ -10,8 +10,13 @@ import {
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
+import { ServiceOrderSummary } from '@/domain/service-order/enterprise/entities/value-objects/service-order-summary'
 import { PrismaService } from '../prisma.service'
 import { PrismaServiceOrderMapper } from '../mappers/prisma-service-order-mapper'
+import {
+  PrismaServiceOrderSummaryMapper,
+  serviceOrderSummaryInclude,
+} from '../mappers/prisma-service-order-summary-mapper'
 import { DomainEvents } from '@/core/events/domain-events'
 
 const withItems = {
@@ -24,6 +29,7 @@ function whereFilters(
 ): Prisma.ServiceOrderWhereInput {
   return {
     tenantId,
+    ...(filters.number && { number: filters.number }),
     ...(filters.status && { status: filters.status as any }),
     ...(filters.technicianId && { technicianId: filters.technicianId }),
     ...(filters.customerId && { customerId: filters.customerId }),
@@ -77,20 +83,20 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
     return PrismaServiceOrderMapper.toDomain(serviceOrder)
   }
 
-  async findMany(
+  async findManySummaries(
     tenantId: string,
     filters: ServiceOrderFilters,
     { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
-  ): Promise<ServiceOrder[]> {
+  ): Promise<ServiceOrderSummary[]> {
     const serviceOrders = await this.prisma.client.serviceOrder.findMany({
       where: whereFilters(tenantId, filters),
       orderBy: { createdAt: 'desc' },
       take: perPage,
       skip: (page - 1) * perPage,
-      include: withItems,
+      include: serviceOrderSummaryInclude,
     })
 
-    return serviceOrders.map(PrismaServiceOrderMapper.toDomain)
+    return serviceOrders.map(PrismaServiceOrderSummaryMapper.toDomain)
   }
 
   async count(tenantId: string, filters: ServiceOrderFilters): Promise<number> {

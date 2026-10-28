@@ -9,13 +9,22 @@ import {
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
+import { ServiceOrderSummary } from '@/domain/service-order/enterprise/entities/value-objects/service-order-summary'
+import { InMemoryCustomersRepository } from './in-memory-customers-repository'
+import { InMemoryDevicesRepository } from './in-memory-devices-repository'
+import { InMemoryUsersRepository } from './in-memory-users-repository'
 
 export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository {
   public items: ServiceOrder[] = []
   public lastNumbers = new Map<string, number>()
 
+  // The summaries read customers, devices and technicians from these, so a
+  // test that lists orders registers them there too
   constructor(
     private serviceOrderItemsRepository: ServiceOrderItemsRepository,
+    private customersRepository = new InMemoryCustomersRepository(),
+    private devicesRepository = new InMemoryDevicesRepository(),
+    private usersRepository = new InMemoryUsersRepository(),
   ) {}
 
   async findById(id: string) {
@@ -31,7 +40,7 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
     )
   }
 
-  async findMany(
+  async findManySummaries(
     tenantId: string,
     filters: ServiceOrderFilters,
     { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
@@ -39,6 +48,46 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
     return this.matching(tenantId, filters)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice((page - 1) * perPage, page * perPage)
+      .map((order) => this.summarize(order))
+  }
+
+  private summarize(order: ServiceOrder) {
+    const customer = this.customersRepository.items.find((item) =>
+      item.id.equals(order.customerId),
+    )
+    const device = this.devicesRepository.items.find((item) =>
+      item.id.equals(order.deviceId),
+    )
+    const technician = order.technicianId
+      ? this.usersRepository.items.find((item) =>
+          item.id.equals(order.technicianId!),
+        )
+      : null
+
+    if (!customer || !device) {
+      throw new Error(
+        `Service order ${order.number} has no customer or device registered.`,
+      )
+    }
+
+    return ServiceOrderSummary.create({
+      serviceOrderId: order.id,
+      number: order.number,
+      status: order.status,
+      priority: order.priority,
+      customerId: customer.id,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      deviceId: device.id,
+      deviceType: device.type,
+      deviceBrand: device.brand,
+      deviceModel: device.model,
+      technicianId: order.technicianId,
+      technicianName: technician?.name ?? null,
+      entryDate: order.entryDate,
+      estimatedDate: order.estimatedDate,
+      createdAt: order.createdAt,
+    })
   }
 
   async count(tenantId: string, filters: ServiceOrderFilters) {
@@ -48,6 +97,7 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
   private matching(tenantId: string, filters: ServiceOrderFilters) {
     return this.items
       .filter((item) => item.tenantId.toString() === tenantId)
+      .filter((item) => !filters.number || item.number === filters.number)
       .filter((item) => !filters.status || item.status === filters.status)
       .filter(
         (item) =>
