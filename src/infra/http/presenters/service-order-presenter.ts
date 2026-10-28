@@ -31,6 +31,8 @@ export class ServiceOrderPresenter {
       customerNotes: serviceOrder.customerNotes,
       warrantyDays: serviceOrder.warrantyDays,
       warrantyUntil: serviceOrder.warrantyUntil,
+      customerNotifiedAt: serviceOrder.customerNotifiedAt,
+      needsCustomerNotice: serviceOrder.needsCustomerNotice,
       createdAt: serviceOrder.createdAt,
     }
   }

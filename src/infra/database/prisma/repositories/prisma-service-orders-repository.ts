@@ -9,7 +9,10 @@ import {
   ServiceOrderFilters,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
-import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
+import {
+  CUSTOMER_NOTICE_STATUSES,
+  ServiceOrder,
+} from '@/domain/service-order/enterprise/entities/service-order'
 import { ServiceOrderSummary } from '@/domain/service-order/enterprise/entities/value-objects/service-order-summary'
 import { PrismaService } from '../prisma.service'
 import { PrismaServiceOrderMapper } from '../mappers/prisma-service-order-mapper'
@@ -34,6 +37,13 @@ function whereFilters(
     ...(filters.technicianId && { technicianId: filters.technicianId }),
     ...(filters.customerId && { customerId: filters.customerId }),
     ...(filters.deviceId && { deviceId: filters.deviceId }),
+    // Inside AND, so it does not replace a status filter given with it
+    ...(filters.needsCustomerNotice && {
+      AND: [
+        { status: { in: CUSTOMER_NOTICE_STATUSES } },
+        { customerNotifiedAt: null },
+      ],
+    }),
     ...(filters.startDate &&
       filters.endDate && {
         createdAt: {

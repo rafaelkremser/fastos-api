@@ -86,6 +86,7 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
       technicianName: technician?.name ?? null,
       entryDate: order.entryDate,
       estimatedDate: order.estimatedDate,
+      customerNotifiedAt: order.customerNotifiedAt,
       createdAt: order.createdAt,
     })
   }
@@ -112,6 +113,9 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
       .filter(
         (item) =>
           !filters.deviceId || item.deviceId.toString() === filters.deviceId,
+      )
+      .filter(
+        (item) => !filters.needsCustomerNotice || item.needsCustomerNotice,
       )
   }
 

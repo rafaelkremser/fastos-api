@@ -20,6 +20,13 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
+// Statuses the customer has to hear about: the quote to approve, and the
+// device ready to pick up
+export const CUSTOMER_NOTICE_STATUSES: OrderStatus[] = [
+  'WAITING_APPROVAL',
+  'COMPLETED',
+]
+
 export type OrderPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
 export interface ServiceOrderProps {
@@ -45,6 +52,8 @@ export interface ServiceOrderProps {
   customerNotes: string | null
   warrantyDays: number
   warrantyUntil: Date | null
+  // When the store last told the customer about the current status
+  customerNotifiedAt: Date | null
   items: ServiceOrderItemList
   createdAt: Date
   updatedAt?: Date | null
@@ -160,6 +169,16 @@ export class ServiceOrder extends AggregateRoot<ServiceOrderProps> {
     return total - this.discount
   }
 
+  get customerNotifiedAt() {
+    return this.props.customerNotifiedAt
+  }
+
+  get needsCustomerNotice() {
+    return (
+      CUSTOMER_NOTICE_STATUSES.includes(this.status) && !this.customerNotifiedAt
+    )
+  }
+
   private touch() {
     this.props.updatedAt = new Date()
   }
@@ -169,6 +188,8 @@ export class ServiceOrder extends AggregateRoot<ServiceOrderProps> {
 
     if (oldStatus !== status) {
       this.props.status = status
+      // A notice was about the old status; the new one needs its own
+      this.props.customerNotifiedAt = null
       this.addDomainEvent(new ServiceOrderStatusChangedEvent(this, oldStatus))
 
       if (status === 'COMPLETED') {
@@ -257,6 +278,11 @@ export class ServiceOrder extends AggregateRoot<ServiceOrderProps> {
     this.touch()
   }
 
+  registerCustomerNotice() {
+    this.props.customerNotifiedAt = new Date()
+    this.touch()
+  }
+
   static create(
     props: Optional<
       ServiceOrderProps,
@@ -265,6 +291,7 @@ export class ServiceOrder extends AggregateRoot<ServiceOrderProps> {
       | 'items'
       | 'discount'
       | 'warrantyDays'
+      | 'customerNotifiedAt'
       | 'entryDate'
       | 'createdAt'
     >,
@@ -278,6 +305,7 @@ export class ServiceOrder extends AggregateRoot<ServiceOrderProps> {
         items: props.items ?? new ServiceOrderItemList(),
         discount: props.discount ?? 0,
         warrantyDays: props.warrantyDays ?? 90,
+        customerNotifiedAt: props.customerNotifiedAt ?? null,
         entryDate: props.entryDate ?? new Date(),
         createdAt: props.createdAt ?? new Date(),
       },

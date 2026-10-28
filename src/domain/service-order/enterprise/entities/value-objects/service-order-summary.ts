@@ -1,6 +1,10 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ValueObject } from '@/core/entities/value-object'
-import { OrderPriority, OrderStatus } from '../service-order'
+import {
+  CUSTOMER_NOTICE_STATUSES,
+  OrderPriority,
+  OrderStatus,
+} from '../service-order'
 
 export interface ServiceOrderSummaryProps {
   serviceOrderId: UniqueEntityID
@@ -18,6 +22,7 @@ export interface ServiceOrderSummaryProps {
   technicianName: string | null
   entryDate: Date
   estimatedDate: Date | null
+  customerNotifiedAt: Date | null
   createdAt: Date
 }
 
@@ -82,6 +87,17 @@ export class ServiceOrderSummary extends ValueObject<ServiceOrderSummaryProps> {
 
   get estimatedDate() {
     return this.props.estimatedDate
+  }
+
+  get customerNotifiedAt() {
+    return this.props.customerNotifiedAt
+  }
+
+  // Same rule as the order's
+  get needsCustomerNotice() {
+    return (
+      CUSTOMER_NOTICE_STATUSES.includes(this.status) && !this.customerNotifiedAt
+    )
   }
 
   get createdAt() {

@@ -8,6 +8,8 @@ export interface ServiceOrderFilters {
   technicianId?: string
   customerId?: string
   deviceId?: string
+  // Waiting for the store to tell the customer about the current status
+  needsCustomerNotice?: boolean
   startDate?: Date
   endDate?: Date
 }

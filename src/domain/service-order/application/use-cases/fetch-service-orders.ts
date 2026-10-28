@@ -14,6 +14,7 @@ interface FetchServiceOrdersUseCaseRequest {
   status?: string
   technicianId?: string
   customerId?: string
+  needsCustomerNotice?: boolean
   startDate?: Date
   endDate?: Date
 }
@@ -39,6 +40,7 @@ export class FetchServiceOrdersUseCase {
     status,
     technicianId,
     customerId,
+    needsCustomerNotice,
     startDate,
     endDate,
   }: FetchServiceOrdersUseCaseRequest): Promise<FetchServiceOrdersUseCaseResponse> {
@@ -47,6 +49,7 @@ export class FetchServiceOrdersUseCase {
       status,
       technicianId,
       customerId,
+      needsCustomerNotice,
       startDate,
       endDate,
     }

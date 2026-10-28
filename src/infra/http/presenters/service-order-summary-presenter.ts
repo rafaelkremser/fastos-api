@@ -26,6 +26,8 @@ export class ServiceOrderSummaryPresenter {
         : null,
       entryDate: summary.entryDate,
       estimatedDate: summary.estimatedDate,
+      customerNotifiedAt: summary.customerNotifiedAt,
+      needsCustomerNotice: summary.needsCustomerNotice,
       createdAt: summary.createdAt,
     }
   }

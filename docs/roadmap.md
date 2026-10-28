@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** nada pendente na API para o F3; o trabalho volta ao frontend. O A4 (métricas) só entra no dashboard (F5). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o frontend usa o A9 (F3.1) e segue para o F4. O A8 (editar a OS não aceitar `technicianId`) está anotado no roadmap do frontend; o A4 (métricas) entra no dashboard (F5). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -69,6 +69,14 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - A2, pedido do frontend: a lista de OS devolve um resumo de cada uma, com nome e telefone do cliente, tipo, marca e modelo do aparelho e o nome do técnico, lidos na mesma consulta; ganhou o filtro `number`; e o filtro `status` passou a ser validado, respondendo 400 em vez de 500 ([PR #16](https://github.com/rafaelkremser/fastos-api/pull/16)). Testado contra o banco real.
 - A3, pedido do frontend: `GET /users` lista a equipe da loja em ordem alfabética, com filtro `role` (por exemplo, só técnicos), sem paginação ([PR #18](https://github.com/rafaelkremser/fastos-api/pull/18)). Testado contra o banco real, inclusive com atendente vendo a lista e recebendo 403 ao tentar criar alguém.
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
+- A9, aviso ao cliente ([PR #19](https://github.com/rafaelkremser/fastos-api/pull/19)), detalhado abaixo.
+
+**A9: aviso ao cliente.** Feito.
+- **O aviso é separado do status.** A OS guarda quando a loja avisou o cliente (`customer_notified_at`), e qualquer mudança de status apaga essa data, porque o aviso valia para o status anterior.
+- **Precisa avisar** quando a OS está "Pronta" (`COMPLETED`) ou "Aguardando aprovação" (`WAITING_APPROVAL`) e ainda não teve aviso. A regra fica na entidade (`needsCustomerNotice`), e a lista e a OS completa devolvem o resultado.
+- **`POST /service-orders/:id/notices`** registra o aviso com o canal (WhatsApp, telefone, SMS, e-mail, pessoalmente) e uma observação opcional, para todos os papéis, e grava `CUSTOMER_NOTIFIED` no histórico na mesma transação.
+- **`GET /service-orders?needsCustomerNotice=true`** traz só as OS que precisam de aviso, e combina com os outros filtros.
+- **Testado contra o banco real,** num branch temporário: a migration aplicada sem diferença para o schema, a atendente registrando o aviso, o filtro caindo de 3 para 2 e a OS voltando a pedir aviso depois de sair de "Pronta" e voltar.
 
 **Cadastro com aprovação.** Feito.
 - **A loja nova nasce inativa.** O cadastro continua público, mas ninguém entra até a loja ser liberada. Com `TENANT_AUTO_APPROVAL=true`, volta a nascer liberada, para quando houver cobrança (ver "Assinatura").
@@ -241,6 +249,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-28 | Cliente ou aparelho com OS não pode ser excluído (409); excluir um cliente sem OS leva os aparelhos dele junto | A OS é o histórico da loja e precisa do cliente e do aparelho. Exigir apagar aparelho por aparelho antes do cliente só atrapalharia | Apagar as OS junto; bloquear a exclusão de cliente que tem aparelho |
 | 2026-10-28 | A lista de OS devolve um resumo (`ServiceOrderSummary`) com os nomes do cliente, do aparelho e do técnico, e não a OS inteira | A tabela mostra nomes, não IDs, e uma consulta só traz tudo; os detalhes completos ficam em `GET /service-orders/:id` | O frontend buscar cliente e aparelho de cada linha; a lista devolver a OS inteira com os itens |
 | 2026-10-28 | Todos os papéis veem a equipe da loja; a lista vem inteira, sem paginação | A lista de OS filtra por técnico para qualquer papel, e a equipe de uma loja cabe numa resposta | Só dono e administrador; lista paginada |
+| 2026-10-28 | Aviso ao cliente registrado à parte, e não como status novo | O status diz em que etapa o conserto está; o aviso diz se a loja falou com o cliente. Como status, cada etapa que pede aviso dobraria (avisar e avisado) | Status "pronta, avisar cliente" e "pronta, cliente avisado" |
+| 2026-10-28 | Mudar o status apaga o aviso | O aviso era sobre o status anterior; o novo precisa do seu | Manter a data do último aviso de qualquer status |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 

@@ -37,6 +37,7 @@ export class PrismaServiceOrderSummaryMapper {
       technicianName: raw.technician?.name ?? null,
       entryDate: raw.entryDate,
       estimatedDate: raw.estimatedDate,
+      customerNotifiedAt: raw.customerNotifiedAt,
       createdAt: raw.createdAt,
     })
   }

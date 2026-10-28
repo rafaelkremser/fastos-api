@@ -34,6 +34,17 @@ const numberValidationPipe = new ZodValidationPipe(numberQueryParamSchema)
 
 type NumberQueryParamSchema = z.infer<typeof numberQueryParamSchema>
 
+const needsNoticeQueryParamSchema = z
+  .enum(['true', 'false'])
+  .optional()
+  .transform((value) => value === 'true')
+
+const needsNoticeValidationPipe = new ZodValidationPipe(
+  needsNoticeQueryParamSchema,
+)
+
+type NeedsNoticeQueryParamSchema = z.infer<typeof needsNoticeQueryParamSchema>
+
 @ApiTags('Service Orders')
 @ApiBearerAuth()
 @Roles(...ALL_ROLES)
@@ -48,6 +59,8 @@ export class FetchServiceOrdersController {
     @Query('status', statusValidationPipe) status: StatusQueryParamSchema,
     @Query('technicianId') technicianId: string | undefined,
     @Query('customerId') customerId: string | undefined,
+    @Query('needsCustomerNotice', needsNoticeValidationPipe)
+    needsCustomerNotice: NeedsNoticeQueryParamSchema,
     @CurrentUser() user: UserPayload,
   ) {
     const result = await this.fetchServiceOrders.execute({
@@ -57,6 +70,7 @@ export class FetchServiceOrdersController {
       status,
       technicianId,
       customerId,
+      needsCustomerNotice,
     })
 
     if (result.isLeft()) {

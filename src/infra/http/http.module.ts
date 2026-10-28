@@ -33,6 +33,7 @@ import { GetServiceOrderController } from './controllers/get-service-order.contr
 import { FetchServiceOrdersController } from './controllers/fetch-service-orders.controller'
 import { EditServiceOrderController } from './controllers/edit-service-order.controller'
 import { ChangeServiceOrderStatusController } from './controllers/change-service-order-status.controller'
+import { RegisterCustomerNoticeController } from './controllers/register-customer-notice.controller'
 import { AssignTechnicianController } from './controllers/assign-technician.controller'
 import { AddServiceOrderItemController } from './controllers/add-service-order-item.controller'
 import { RemoveServiceOrderItemController } from './controllers/remove-service-order-item.controller'
@@ -67,6 +68,7 @@ import { GetServiceOrderUseCase } from '@/domain/service-order/application/use-c
 import { FetchServiceOrdersUseCase } from '@/domain/service-order/application/use-cases/fetch-service-orders'
 import { EditServiceOrderUseCase } from '@/domain/service-order/application/use-cases/edit-service-order'
 import { ChangeServiceOrderStatusUseCase } from '@/domain/service-order/application/use-cases/change-service-order-status'
+import { RegisterCustomerNoticeUseCase } from '@/domain/service-order/application/use-cases/register-customer-notice'
 import { AssignTechnicianUseCase } from '@/domain/service-order/application/use-cases/assign-technician'
 import { AddServiceOrderItemUseCase } from '@/domain/service-order/application/use-cases/add-service-order-item'
 import { RemoveServiceOrderItemUseCase } from '@/domain/service-order/application/use-cases/remove-service-order-item'
@@ -105,6 +107,7 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     FetchServiceOrdersController,
     EditServiceOrderController,
     ChangeServiceOrderStatusController,
+    RegisterCustomerNoticeController,
     AssignTechnicianController,
     AddServiceOrderItemController,
     RemoveServiceOrderItemController,
@@ -137,6 +140,7 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     FetchServiceOrdersUseCase,
     EditServiceOrderUseCase,
     ChangeServiceOrderStatusUseCase,
+    RegisterCustomerNoticeUseCase,
     AssignTechnicianUseCase,
     AddServiceOrderItemUseCase,
     RemoveServiceOrderItemUseCase,

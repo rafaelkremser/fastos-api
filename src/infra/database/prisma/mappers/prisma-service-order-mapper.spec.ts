@@ -32,6 +32,7 @@ function makeRaw(
     customerNotes: null,
     warrantyDays: 90,
     warrantyUntil: null,
+    customerNotifiedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     items,
