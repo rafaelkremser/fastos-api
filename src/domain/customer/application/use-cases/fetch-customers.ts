@@ -14,6 +14,8 @@ type FetchCustomersUseCaseResponse = Either<
   null,
   {
     customers: Customer[]
+    // Across all pages, so the client can show how many pages there are
+    totalCount: number
   }
 >
 
@@ -27,22 +29,22 @@ export class FetchCustomersUseCase {
     perPage,
     search,
   }: FetchCustomersUseCaseRequest): Promise<FetchCustomersUseCaseResponse> {
-    let customers: Customer[]
-
-    if (search) {
-      customers = await this.customersRepository.searchByName(tenantId, search, {
-        page,
-        perPage,
-      })
-    } else {
-      customers = await this.customersRepository.findMany(tenantId, {
-        page,
-        perPage,
-      })
-    }
+    const [customers, totalCount] = search
+      ? await Promise.all([
+          this.customersRepository.searchByName(tenantId, search, {
+            page,
+            perPage,
+          }),
+          this.customersRepository.countByName(tenantId, search),
+        ])
+      : await Promise.all([
+          this.customersRepository.findMany(tenantId, { page, perPage }),
+          this.customersRepository.countByTenantId(tenantId),
+        ])
 
     return right({
       customers,
+      totalCount,
     })
   }
 }

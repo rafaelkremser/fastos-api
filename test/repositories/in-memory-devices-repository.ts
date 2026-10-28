@@ -1,4 +1,7 @@
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import { DevicesRepository } from '@/domain/device/application/repositories/devices-repository'
 import { Device } from '@/domain/device/enterprise/entities/device'
 
@@ -12,7 +15,7 @@ export class InMemoryDevicesRepository implements DevicesRepository {
   async findManyByCustomerId(
     tenantId: string,
     customerId: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ) {
     return this.items
       .filter((item) => item.tenantId.toString() === tenantId)
@@ -21,7 +24,16 @@ export class InMemoryDevicesRepository implements DevicesRepository {
       .slice((page - 1) * perPage, page * perPage)
   }
 
-  async findMany(tenantId: string, { page, perPage = 20 }: PaginationParams) {
+  async countByCustomerId(tenantId: string, customerId: string) {
+    return this.items
+      .filter((item) => item.tenantId.toString() === tenantId)
+      .filter((item) => item.customerId.toString() === customerId).length
+  }
+
+  async findMany(
+    tenantId: string,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
+  ) {
     return this.items
       .filter((item) => item.tenantId.toString() === tenantId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

@@ -19,7 +19,11 @@ interface FetchServiceOrdersUseCaseRequest {
 
 type FetchServiceOrdersUseCaseResponse = Either<
   null,
-  { serviceOrders: ServiceOrder[] }
+  {
+    serviceOrders: ServiceOrder[]
+    // Across all pages, so the client can show how many pages there are
+    totalCount: number
+  }
 >
 
 @Injectable()
@@ -44,12 +48,14 @@ export class FetchServiceOrdersUseCase {
       endDate,
     }
 
-    const serviceOrders = await this.serviceOrdersRepository.findMany(
-      tenantId,
-      filters,
-      { page, perPage },
-    )
+    const [serviceOrders, totalCount] = await Promise.all([
+      this.serviceOrdersRepository.findMany(tenantId, filters, {
+        page,
+        perPage,
+      }),
+      this.serviceOrdersRepository.count(tenantId, filters),
+    ])
 
-    return right({ serviceOrders })
+    return right({ serviceOrders, totalCount })
   }
 }

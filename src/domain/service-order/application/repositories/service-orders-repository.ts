@@ -20,6 +20,11 @@ export abstract class ServiceOrdersRepository {
     filters: ServiceOrderFilters,
     params: PaginationParams,
   ): Promise<ServiceOrder[]>
+  // Counts what findMany finds with the same filters, across all pages
+  abstract count(
+    tenantId: string,
+    filters: ServiceOrderFilters,
+  ): Promise<number>
   abstract countByStatus(tenantId: string): Promise<Record<string, number>>
   abstract reserveNextNumber(tenantId: string): Promise<number>
   abstract create(serviceOrder: ServiceOrder): Promise<void>

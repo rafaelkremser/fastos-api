@@ -8,6 +8,10 @@ export abstract class DevicesRepository {
     customerId: string,
     params: PaginationParams,
   ): Promise<Device[]>
+  abstract countByCustomerId(
+    tenantId: string,
+    customerId: string,
+  ): Promise<number>
   abstract findMany(
     tenantId: string,
     params: PaginationParams,

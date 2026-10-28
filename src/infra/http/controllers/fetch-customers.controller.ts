@@ -7,6 +7,7 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { FetchCustomersUseCase } from '@/domain/customer/application/use-cases/fetch-customers'
 import { CustomerPresenter } from '../presenters/customer-presenter'
+import { PaginationPresenter } from '../presenters/pagination-presenter'
 
 const pageQueryParamSchema = z
   .string()
@@ -39,13 +40,14 @@ export class FetchCustomersController {
     })
 
     if (result.isLeft()) {
-      return { customers: [] }
+      return { customers: [], meta: PaginationPresenter.toHTTP(page, 0) }
     }
 
-    const customers = result.value.customers
+    const { customers, totalCount } = result.value
 
     return {
       customers: customers.map(CustomerPresenter.toHTTP),
+      meta: PaginationPresenter.toHTTP(page, totalCount),
     }
   }
 }

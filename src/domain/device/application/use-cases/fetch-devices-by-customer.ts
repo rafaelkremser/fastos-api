@@ -14,6 +14,8 @@ type FetchDevicesByCustomerUseCaseResponse = Either<
   null,
   {
     devices: Device[]
+    // Across all pages, so the client can show how many pages there are
+    totalCount: number
   }
 >
 
@@ -27,14 +29,17 @@ export class FetchDevicesByCustomerUseCase {
     page,
     perPage,
   }: FetchDevicesByCustomerUseCaseRequest): Promise<FetchDevicesByCustomerUseCaseResponse> {
-    const devices = await this.devicesRepository.findManyByCustomerId(
-      tenantId,
-      customerId,
-      { page, perPage },
-    )
+    const [devices, totalCount] = await Promise.all([
+      this.devicesRepository.findManyByCustomerId(tenantId, customerId, {
+        page,
+        perPage,
+      }),
+      this.devicesRepository.countByCustomerId(tenantId, customerId),
+    ])
 
     return right({
       devices,
+      totalCount,
     })
   }
 }

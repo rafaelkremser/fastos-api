@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import {
   ServiceOrdersRepository,
   ServiceOrderFilters,
@@ -14,6 +17,25 @@ import { DomainEvents } from '@/core/events/domain-events'
 const withItems = {
   items: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.ServiceOrderInclude
+
+function whereFilters(
+  tenantId: string,
+  filters: ServiceOrderFilters,
+): Prisma.ServiceOrderWhereInput {
+  return {
+    tenantId,
+    ...(filters.status && { status: filters.status as any }),
+    ...(filters.technicianId && { technicianId: filters.technicianId }),
+    ...(filters.customerId && { customerId: filters.customerId }),
+    ...(filters.startDate &&
+      filters.endDate && {
+        createdAt: {
+          gte: filters.startDate,
+          lte: filters.endDate,
+        },
+      }),
+  }
+}
 
 @Injectable()
 export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
@@ -57,22 +79,10 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
   async findMany(
     tenantId: string,
     filters: ServiceOrderFilters,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ): Promise<ServiceOrder[]> {
     const serviceOrders = await this.prisma.client.serviceOrder.findMany({
-      where: {
-        tenantId,
-        ...(filters.status && { status: filters.status as any }),
-        ...(filters.technicianId && { technicianId: filters.technicianId }),
-        ...(filters.customerId && { customerId: filters.customerId }),
-        ...(filters.startDate &&
-          filters.endDate && {
-            createdAt: {
-              gte: filters.startDate,
-              lte: filters.endDate,
-            },
-          }),
-      },
+      where: whereFilters(tenantId, filters),
       orderBy: { createdAt: 'desc' },
       take: perPage,
       skip: (page - 1) * perPage,
@@ -80,6 +90,12 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
     })
 
     return serviceOrders.map(PrismaServiceOrderMapper.toDomain)
+  }
+
+  async count(tenantId: string, filters: ServiceOrderFilters): Promise<number> {
+    return this.prisma.client.serviceOrder.count({
+      where: whereFilters(tenantId, filters),
+    })
   }
 
   async countByStatus(tenantId: string): Promise<Record<string, number>> {

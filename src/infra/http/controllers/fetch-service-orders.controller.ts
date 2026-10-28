@@ -7,6 +7,7 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { FetchServiceOrdersUseCase } from '@/domain/service-order/application/use-cases/fetch-service-orders'
 import { ServiceOrderPresenter } from '../presenters/service-order-presenter'
+import { PaginationPresenter } from '../presenters/pagination-presenter'
 
 const pageQueryParamSchema = z
   .string()
@@ -43,13 +44,14 @@ export class FetchServiceOrdersController {
     })
 
     if (result.isLeft()) {
-      return { serviceOrders: [] }
+      return { serviceOrders: [], meta: PaginationPresenter.toHTTP(page, 0) }
     }
 
-    const serviceOrders = result.value.serviceOrders
+    const { serviceOrders, totalCount } = result.value
 
     return {
       serviceOrders: serviceOrders.map(ServiceOrderPresenter.toHTTP),
+      meta: PaginationPresenter.toHTTP(page, totalCount),
     }
   }
 }

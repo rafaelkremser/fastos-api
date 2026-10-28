@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** A1, o total de registros nas listas, que o frontend precisa para a paginação (F2). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** A2 e A3 (OS com cliente e aparelho na lista; lista de usuários da loja), quando o frontend chegar às OS (F3). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -64,6 +64,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - TypeScript 6.0, Prisma Client gerado no `postinstall` e editor usando o TypeScript do projeto ([PR #2](https://github.com/rafaelkremser/fastos-api/pull/2)).
 - Primeiros testes do projeto: unitários com jest e repositórios em memória em `test/`.
 - Cadastro com aprovação ([PR #13](https://github.com/rafaelkremser/fastos-api/pull/13)), detalhado abaixo.
+- A1, pedido do frontend: as listas de clientes, aparelhos do cliente e OS devolvem `meta: { page, perPage, totalCount }`, contado com os mesmos filtros da página ([PR #14](https://github.com/rafaelkremser/fastos-api/pull/14)). Testado contra o banco real: 23 clientes deram 20 na primeira página e `totalCount` 23; a busca e o filtro de status contaram só o que encontram.
 
 **Cadastro com aprovação.** Feito.
 - **A loja nova nasce inativa.** O cadastro continua público, mas ninguém entra até a loja ser liberada. Com `TENANT_AUTO_APPROVAL=true`, volta a nascer liberada, para quando houver cobrança (ver "Assinatura").
@@ -174,6 +175,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - **Cadastros simultâneos com o mesmo endereço ou e-mail:** se dois pedidos passarem pela verificação ao mesmo tempo, o segundo esbarra na restrição de unicidade do banco e recebe erro 500 em vez de 409. Graças à transação, nada fica gravado pela metade.
 - **Gravações simultâneas na mesma OS:** cada gravação regrava a OS inteira com o que foi lido no começo do pedido. Se duas pessoas mexerem na mesma OS no mesmo instante (por exemplo, uma edita o diagnóstico enquanto a outra adiciona um item), a segunda gravação desfaz a mudança da primeira nos campos da OS. Os itens não se perdem, porque são gravados um a um. A solução é controlar a versão: a gravação só vale se a OS não mudou desde a leitura, e senão responde 409.
 - **Loja inativa hoje quer dizer "aguardando aprovação".** Quando houver suspensão por falta de pagamento (S-4), o login e o frontend vão precisar distinguir os dois casos, com um status no lugar do `isActive`.
+- **O filtro de status da lista de OS não é validado:** `GET /service-orders?status=XYZ` responde 500 em vez de 400. Entra no A2, que mexe na mesma rota.
 - **Ninguém é avisado de um cadastro novo:** a fila só aparece com `npm run tenants:inactive`. As notificações (P3-4) resolvem.
 - **Os tokens ficam no frontend,** porque vêm no corpo da resposta: um script malicioso injetado no site (XSS) conseguiria lê-los. Guardar o de renovação num cookie que o JavaScript não lê é a alternativa, quando houver frontend.
 - **Limite de tentativas:**

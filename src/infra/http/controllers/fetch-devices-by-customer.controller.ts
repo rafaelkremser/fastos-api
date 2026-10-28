@@ -7,6 +7,7 @@ import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
 import { FetchDevicesByCustomerUseCase } from '@/domain/device/application/use-cases/fetch-devices-by-customer'
 import { DevicePresenter } from '../presenters/device-presenter'
+import { PaginationPresenter } from '../presenters/pagination-presenter'
 
 const pageQueryParamSchema = z
   .string()
@@ -39,13 +40,14 @@ export class FetchDevicesByCustomerController {
     })
 
     if (result.isLeft()) {
-      return { devices: [] }
+      return { devices: [], meta: PaginationPresenter.toHTTP(page, 0) }
     }
 
-    const devices = result.value.devices
+    const { devices, totalCount } = result.value
 
     return {
       devices: devices.map(DevicePresenter.toHTTP),
+      meta: PaginationPresenter.toHTTP(page, totalCount),
     }
   }
 }
