@@ -23,7 +23,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "gen:keys": "node scripts/generate-jwt-keys.mjs"
+    "gen:keys": "node scripts/generate-jwt-keys.mjs",
+    "tenants:inactive": "node dist/infra/cli/tenants inactive",
+    "tenants:activate": "node dist/infra/cli/tenants activate"
   },
   "dependencies": {
     "@neon/config": "^1.9.1",

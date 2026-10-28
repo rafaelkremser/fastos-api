@@ -16,6 +16,12 @@ export class InMemoryTenantsRepository implements TenantsRepository {
     return this.items.find((item) => item.slug.value === slug) ?? null
   }
 
+  async findManyInactive() {
+    return this.items
+      .filter((item) => !item.isActive)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+  }
+
   async create(tenant: Tenant) {
     this.items.push(tenant)
   }

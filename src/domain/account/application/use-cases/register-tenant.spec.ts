@@ -53,6 +53,18 @@ describe('Register Tenant', () => {
     )
   })
 
+  it('should leave the tenant waiting for approval', async () => {
+    await sut.execute(request)
+
+    expect(tenantsRepository.items[0].isActive).toBe(false)
+  })
+
+  it('should activate the tenant right away when approval is automatic', async () => {
+    await sut.execute({ ...request, autoApprove: true })
+
+    expect(tenantsRepository.items[0].isActive).toBe(true)
+  })
+
   it('should use the slug chosen by the owner', async () => {
     const result = await sut.execute({ ...request, tenantSlug: 'tech-centro' })
 

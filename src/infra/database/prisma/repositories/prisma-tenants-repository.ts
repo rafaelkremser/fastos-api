@@ -44,6 +44,15 @@ export class PrismaTenantsRepository implements TenantsRepository {
     return PrismaTenantMapper.toDomain(tenant)
   }
 
+  async findManyInactive(): Promise<Tenant[]> {
+    const tenants = await this.prisma.client.tenant.findMany({
+      where: { isActive: false },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    return tenants.map(PrismaTenantMapper.toDomain)
+  }
+
   async create(tenant: Tenant): Promise<void> {
     const data = PrismaTenantMapper.toPrisma(tenant)
 

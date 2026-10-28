@@ -7,6 +7,7 @@ import { makeUser } from 'test/factories/make-user'
 import { Slug } from '../../enterprise/entities/value-objects/slug'
 import { AuthenticateUserUseCase } from './authenticate-user'
 import { WrongCredentialsError } from './errors/wrong-credentials-error'
+import { InactiveTenantError } from './errors/inactive-tenant-error'
 
 let tenantsRepository: InMemoryTenantsRepository
 let usersRepository: InMemoryUsersRepository
@@ -157,7 +158,7 @@ describe('Authenticate User', () => {
     expect(result.value).toBeInstanceOf(WrongCredentialsError)
   })
 
-  it('should not authenticate in an inactive tenant', async () => {
+  it('should tell a user with the right password that the tenant is inactive', async () => {
     const tenant = makeTenant({ slug: Slug.create('loja-a'), isActive: false })
     tenantsRepository.items.push(tenant)
     usersRepository.items.push(
@@ -172,6 +173,26 @@ describe('Authenticate User', () => {
       tenantSlug: 'loja-a',
       email: 'john@example.com',
       password: '123456',
+    })
+
+    expect(result.value).toBeInstanceOf(InactiveTenantError)
+  })
+
+  it('should not reveal that the tenant is inactive to a wrong password', async () => {
+    const tenant = makeTenant({ slug: Slug.create('loja-a'), isActive: false })
+    tenantsRepository.items.push(tenant)
+    usersRepository.items.push(
+      makeUser({
+        tenantId: tenant.id,
+        email: 'john@example.com',
+        password: '123456-hashed',
+      }),
+    )
+
+    const result = await sut.execute({
+      tenantSlug: 'loja-a',
+      email: 'john@example.com',
+      password: 'wrong',
     })
 
     expect(result.value).toBeInstanceOf(WrongCredentialsError)

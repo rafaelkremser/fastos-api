@@ -14,6 +14,7 @@ import { Hasher } from '@/domain/account/application/cryptography/hasher'
 import { Encrypter } from '@/domain/account/application/cryptography/encrypter'
 import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/authenticate-user'
 import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/register-tenant'
+import { EnvService } from '@/infra/env/env.service'
 import { AuthenticateController } from './controllers/authenticate.controller'
 import { CreateAccountController } from './controllers/create-account.controller'
 import {
@@ -40,6 +41,7 @@ async function createApp(trustProxyHops = 0) {
       { provide: Hasher, useClass: FakeHasher },
       { provide: Encrypter, useClass: FakeEncrypter },
       { provide: TransactionManager, useClass: FakeTransactionManager },
+      { provide: EnvService, useValue: { get: () => false } },
     ],
   }).compile()
 

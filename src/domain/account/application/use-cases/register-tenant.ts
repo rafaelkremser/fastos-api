@@ -20,6 +20,8 @@ interface RegisterTenantUseCaseRequest {
   ownerName: string
   ownerEmail: string
   ownerPassword: string
+  // Without it, the tenant waits until someone activates it
+  autoApprove?: boolean
 }
 
 type RegisterTenantUseCaseResponse = Either<
@@ -50,6 +52,7 @@ export class RegisterTenantUseCase {
     ownerName,
     ownerEmail,
     ownerPassword,
+    autoApprove = false,
   }: RegisterTenantUseCaseRequest): Promise<RegisterTenantUseCaseResponse> {
     const tenantWithSameEmail =
       await this.tenantsRepository.findByEmail(tenantEmail)
@@ -80,6 +83,7 @@ export class RegisterTenantUseCase {
       email: tenantEmail,
       document: tenantDocument ?? null,
       phone: tenantPhone ?? null,
+      isActive: autoApprove,
     })
 
     const hashedPassword = await this.hasher.hash(ownerPassword)
