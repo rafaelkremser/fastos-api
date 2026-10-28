@@ -22,6 +22,9 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P1: quebra ou vaza em produção | 4 | 4 |
 | P2: operação | 0 | 7 |
 | P3: escala e LGPD | 0 | 5 |
+| Assinatura | 0 | 6 |
+
+**Próximo:** A1, o total de registros nas listas, que o frontend precisa para a paginação (F2). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -60,6 +63,15 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - Banco no Neon, com os branches `production` e `dev` (`b5f3958`, `32b8850`).
 - TypeScript 6.0, Prisma Client gerado no `postinstall` e editor usando o TypeScript do projeto ([PR #2](https://github.com/rafaelkremser/fastos-api/pull/2)).
 - Primeiros testes do projeto: unitários com jest e repositórios em memória em `test/`.
+- Cadastro com aprovação ([PR #13](https://github.com/rafaelkremser/fastos-api/pull/13)), detalhado abaixo.
+
+**Cadastro com aprovação.** Feito.
+- **A loja nova nasce inativa.** O cadastro continua público, mas ninguém entra até a loja ser liberada. Com `TENANT_AUTO_APPROVAL=true`, volta a nascer liberada, para quando houver cobrança (ver "Assinatura").
+- **Login de loja pendente:** com a senha certa, a API responde 403 ("Tenant is not active."), e o frontend explica que a loja aguarda aprovação. Com a senha errada, a resposta continua 401, então só quem já provou ser usuário da loja descobre que ela está pendente.
+- **Comandos para o dono do FastOS** (depois do `npm run build`, contra o banco do `DATABASE_URL`):
+  - `npm run tenants:inactive` lista as lojas aguardando aprovação, da mais antiga para a mais nova;
+  - `npm run tenants:activate -- <endereço>` libera a loja.
+- **Testado** num branch temporário do Neon, junto com o frontend: cadastro pendente, 401 com a senha errada, 403 com a certa, listagem, liberação e login depois de liberada.
 
 ## P1: quebra ou vaza em produção
 
@@ -104,7 +116,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | # | Item | Status |
 |---|---|---|
-| P2-1 | Definir a hospedagem da API | **Próximo** |
+| P2-1 | Definir a hospedagem da API | Adiado para o primeiro deploy (ver "Decisões") |
 | P2-2 | Logs estruturados (Pino), com um ID por requisição | Pendente |
 | P2-3 | `GET /health` para o host monitorar a API | Pendente |
 | P2-4 | Monitoramento de erros (Sentry) | Pendente |
@@ -122,6 +134,19 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3-4 | Notificações por WhatsApp e e-mail quando a OS muda de status | Pendente |
 | P3-5 | Redis: cache e contadores do limite de tentativas compartilhados entre instâncias | Pendente |
 
+## Assinatura (depois dos primeiros clientes)
+
+Hoje os primeiros clientes entram por contrato, com a loja liberada à mão. Esta fase troca a liberação manual pela cobrança.
+
+| # | Item | Status |
+|---|---|---|
+| S-1 | Termos de uso e política de privacidade, aceitos no cadastro. O FastOS trata os dados dos clientes de cada loja por conta dela (LGPD) | Pendente |
+| S-2 | Confirmação de e-mail no cadastro | Pendente |
+| S-3 | Planos e limites aplicados na API: usuários, OS por mês, recursos | Pendente |
+| S-4 | Cobrança recorrente: o pagamento libera a loja, e a falta dele a suspende | Pendente |
+| S-5 | Tela de planos e período de teste (ou plano grátis) | Pendente |
+| S-6 | Cadastro sem aprovação (`TENANT_AUTO_APPROVAL=true`), depois de S-1, S-2 e S-4 | Pendente |
+
 ## Limpeza contínua
 
 - O `README.md` descreve rotas e recursos que não existem, como Dashboard e `/auth/login`.
@@ -130,6 +155,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - `class-transformer` e `class-validator` estão instalados sem uso; a validação é feita com Zod.
 - Os eventos de domínio da OS são disparados, mas nenhum handler é registrado. Usar (P3-4) ou parar de emitir.
 - O Swagger não mostra o corpo das requisições, porque não lê os esquemas do Zod.
+- As URLs do Neon trazem `sslmode=require`, e o `pg` avisa a cada conexão que hoje trata esse modo como `verify-full` e que isso muda na próxima versão. Trocar por `sslmode=verify-full` no `.env` e nos segredos de produção.
 
 ## Débitos conhecidos
 
@@ -147,6 +173,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - **Eventos de domínio disparam antes do commit:** o repositório de OS dispara os eventos logo após gravar, ainda dentro da transação. Hoje nenhum evento tem handler, então não há efeito. Quando houver notificações (P3-4), um envio poderia sair para uma mudança que depois foi desfeita; os eventos terão de disparar só depois do commit.
 - **Cadastros simultâneos com o mesmo endereço ou e-mail:** se dois pedidos passarem pela verificação ao mesmo tempo, o segundo esbarra na restrição de unicidade do banco e recebe erro 500 em vez de 409. Graças à transação, nada fica gravado pela metade.
 - **Gravações simultâneas na mesma OS:** cada gravação regrava a OS inteira com o que foi lido no começo do pedido. Se duas pessoas mexerem na mesma OS no mesmo instante (por exemplo, uma edita o diagnóstico enquanto a outra adiciona um item), a segunda gravação desfaz a mudança da primeira nos campos da OS. Os itens não se perdem, porque são gravados um a um. A solução é controlar a versão: a gravação só vale se a OS não mudou desde a leitura, e senão responde 409.
+- **Loja inativa hoje quer dizer "aguardando aprovação".** Quando houver suspensão por falta de pagamento (S-4), o login e o frontend vão precisar distinguir os dois casos, com um status no lugar do `isActive`.
+- **Ninguém é avisado de um cadastro novo:** a fila só aparece com `npm run tenants:inactive`. As notificações (P3-4) resolvem.
 - **Os tokens ficam no frontend,** porque vêm no corpo da resposta: um script malicioso injetado no site (XSS) conseguiria lê-los. Guardar o de renovação num cookie que o JavaScript não lê é a alternativa, quando houver frontend.
 - **Limite de tentativas:**
   - os contadores ficam na memória de cada instância (até o P3-5);
@@ -160,13 +188,15 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 
 ## Checklist do primeiro deploy
 
-- [ ] Hospedagem escolhida (P2-1), na mesma região do banco (São Paulo).
+- [ ] Hospedagem escolhida (P2-1), na mesma região do banco (São Paulo). Recomendação: Fly.io em São Paulo para a API e Cloudflare para o frontend e o DNS.
 - [ ] Par de chaves JWT novo, só para produção, guardado nos segredos do host (nunca o de desenvolvimento).
 - [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon.
 - [ ] Sequência do deploy: `npm ci` e `npm run build` (o build precisa das dependências de desenvolvimento); na execução, basta `npm ci --omit=dev` e `npm run start:prod`, que aplica as migrations antes de subir. Se o host tiver etapa de release, rodar `npm run prisma:deploy` nela e `node dist/main` como comando de início.
 - [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
 - [ ] `CORS_ORIGINS` com as origens do frontend, por exemplo `https://*.fastos.com`. Se ficar vazia, o frontend não consegue chamar a API.
 - [ ] `SWAGGER_ENABLED` não definida (ou `false`), para o `/api/docs` ficar desligado.
+- [ ] `TENANT_AUTO_APPROVAL` não definida (ou `false`), para as lojas novas aguardarem aprovação.
+- [ ] Um jeito de rodar `npm run tenants:inactive` e `tenants:activate` contra o banco de produção: no servidor, ou localmente com as URLs do `production` só em variáveis de ambiente.
 - [ ] DNS curinga `*.fastos.com` apontando para o frontend.
 - [ ] Branch `dev` no git, pareada com o branch `dev` do Neon.
 
@@ -197,6 +227,10 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-22 | Transações por um `TransactionManager` no domínio, com a transação aberta guardada no contexto da requisição (`AsyncLocalStorage`) | O domínio não conhece o Prisma, e os repositórios participam sem receber a transação como parâmetro | Passar a transação explicitamente a cada repositório; usar uma biblioteca de terceiros |
 | 2026-10-23 | Itens lidos e gravados só pela OS: o repositório da OS grava a OS e as mudanças da lista de itens na mesma transação | A OS calcula os totais a partir dos itens, e nenhum item é gravado por fora dela | Casos de uso gravando direto no repositório de itens, como antes |
 | 2026-10-27 | Número da OS vem de um contador por loja, incrementado na mesma transação que grava a OS | Atômico e sem buracos; só as OS da mesma loja esperam umas pelas outras | Tentar de novo quando o número repetir; `MAX + 1` com bloqueio da loja inteira; uma sequência do Postgres por loja |
+| 2026-10-27 | Hospedagem decidida só no primeiro deploy, depois do frontend completo e testado localmente. Recomendação: Fly.io em São Paulo para a API e Cloudflare para o frontend e o DNS | Ver tudo funcionando antes de pagar; o domínio ainda não foi escolhido (`fastos.com.br`, `fastos.com` e `fastos.app` já têm dono) | Contratar agora; API fora de São Paulo (Railway, Render), longe do banco |
+| 2026-10-27 | Cadastro aberto, mas a loja nasce aguardando aprovação; o dono do FastOS a libera por comando depois de fechar o contrato | Sem cobrança, confirmação de e-mail e termos, o cadastro já liberado deixaria qualquer um usar de graça e sem contrato. O cliente escolhe a própria senha | Cadastro já liberado; loja criada pelo dono do FastOS, que teria de saber a senha do cliente ou mandar um link por e-mail |
+| 2026-10-27 | Loja inativa responde 403 no login só quando a senha está certa | Quem já provou ser usuário da loja pode saber que ela aguarda aprovação; para os outros, a resposta continua igual à da senha errada | Sempre 401, sem explicar; avisar mesmo com a senha errada |
+| 2026-10-27 | Planos e cobrança só depois dos primeiros clientes | Preço definido com dados reais; uma tela de planos sem cobrança prometeria o que o sistema não faz | Tela de planos já no cadastro |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 

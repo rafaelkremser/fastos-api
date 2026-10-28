@@ -9,6 +9,7 @@ import {
   REFRESH_TOKEN_TTL_SECONDS,
 } from '../cryptography/tokens'
 import { WrongCredentialsError } from './errors/wrong-credentials-error'
+import { InactiveTenantError } from './errors/inactive-tenant-error'
 
 interface AuthenticateUserUseCaseRequest {
   tenantSlug: string
@@ -17,7 +18,7 @@ interface AuthenticateUserUseCaseRequest {
 }
 
 type AuthenticateUserUseCaseResponse = Either<
-  WrongCredentialsError,
+  WrongCredentialsError | InactiveTenantError,
   {
     accessToken: string
     refreshToken: string
@@ -40,7 +41,7 @@ export class AuthenticateUserUseCase {
   }: AuthenticateUserUseCaseRequest): Promise<AuthenticateUserUseCaseResponse> {
     const tenant = await this.tenantsRepository.findBySlug(tenantSlug)
 
-    const user = tenant?.isActive
+    const user = tenant
       ? await this.usersRepository.findByEmail(tenant.id.toString(), email)
       : null
 
@@ -53,6 +54,12 @@ export class AuthenticateUserUseCase {
 
     if (!user || !user.isActive || !isPasswordValid) {
       return left(new WrongCredentialsError())
+    }
+
+    // A tenant waiting for approval is only revealed to someone who already
+    // proved to be one of its users
+    if (!tenant?.isActive) {
+      return left(new InactiveTenantError())
     }
 
     const sub = user.id.toString()

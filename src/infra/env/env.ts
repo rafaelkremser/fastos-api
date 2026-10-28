@@ -32,6 +32,7 @@ export const envSchema = z.object({
       ),
     ),
   SWAGGER_ENABLED: booleanFromString,
+  TENANT_AUTO_APPROVAL: booleanFromString,
 })
 
 export type Env = z.infer<typeof envSchema>

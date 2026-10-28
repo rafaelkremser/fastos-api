@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   Post,
   UnauthorizedException,
@@ -15,6 +16,7 @@ import { Public } from '@/infra/auth/public'
 import { LOGIN_RATE_LIMIT } from '../rate-limit'
 import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/authenticate-user'
 import { WrongCredentialsError } from '@/domain/account/application/use-cases/errors/wrong-credentials-error'
+import { InactiveTenantError } from '@/domain/account/application/use-cases/errors/inactive-tenant-error'
 import { ACCESS_TOKEN_TTL_SECONDS } from '@/domain/account/application/cryptography/tokens'
 
 const authenticateBodySchema = z.object({
@@ -52,6 +54,8 @@ export class AuthenticateController {
       switch (error.constructor) {
         case WrongCredentialsError:
           throw new UnauthorizedException(error.message)
+        case InactiveTenantError:
+          throw new ForbiddenException(error.message)
         default:
           throw new BadRequestException(error.message)
       }

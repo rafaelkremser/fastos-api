@@ -12,6 +12,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
 import { Public } from '@/infra/auth/public'
+import { EnvService } from '@/infra/env/env.service'
 import { SIGNUP_RATE_LIMIT } from '../rate-limit'
 import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/register-tenant'
 import { TenantAlreadyExistsError } from '@/domain/account/application/use-cases/errors/tenant-already-exists-error'
@@ -40,7 +41,10 @@ type CreateAccountBodySchema = z.infer<typeof createAccountBodySchema>
 @UseGuards(ThrottlerGuard)
 @Throttle(SIGNUP_RATE_LIMIT)
 export class CreateAccountController {
-  constructor(private registerTenant: RegisterTenantUseCase) {}
+  constructor(
+    private registerTenant: RegisterTenantUseCase,
+    private env: EnvService,
+  ) {}
 
   @Post()
   @HttpCode(201)
@@ -65,6 +69,7 @@ export class CreateAccountController {
       ownerName,
       ownerEmail,
       ownerPassword,
+      autoApprove: this.env.get('TENANT_AUTO_APPROVAL'),
     })
 
     if (result.isLeft()) {

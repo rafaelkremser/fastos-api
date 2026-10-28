@@ -7,11 +7,12 @@ const requiredEnv = {
 }
 
 describe('Environment variables', () => {
-  it('should default to no CORS origins and Swagger off', () => {
+  it('should default to no CORS origins, Swagger off and new tenants waiting for approval', () => {
     const env = envSchema.parse(requiredEnv)
 
     expect(env.CORS_ORIGINS).toEqual([])
     expect(env.SWAGGER_ENABLED).toBe(false)
+    expect(env.TENANT_AUTO_APPROVAL).toBe(false)
   })
 
   it('should read a comma-separated list of CORS origins', () => {
