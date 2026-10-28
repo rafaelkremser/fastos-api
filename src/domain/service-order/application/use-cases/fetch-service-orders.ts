@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Either, right } from '@/core/either'
-import { ServiceOrder } from '../../enterprise/entities/service-order'
+import { ServiceOrderSummary } from '../../enterprise/entities/value-objects/service-order-summary'
 import {
   ServiceOrdersRepository,
   ServiceOrderFilters,
@@ -10,6 +10,7 @@ interface FetchServiceOrdersUseCaseRequest {
   tenantId: string
   page: number
   perPage?: number
+  number?: number
   status?: string
   technicianId?: string
   customerId?: string
@@ -20,7 +21,7 @@ interface FetchServiceOrdersUseCaseRequest {
 type FetchServiceOrdersUseCaseResponse = Either<
   null,
   {
-    serviceOrders: ServiceOrder[]
+    serviceOrders: ServiceOrderSummary[]
     // Across all pages, so the client can show how many pages there are
     totalCount: number
   }
@@ -34,6 +35,7 @@ export class FetchServiceOrdersUseCase {
     tenantId,
     page,
     perPage,
+    number,
     status,
     technicianId,
     customerId,
@@ -41,6 +43,7 @@ export class FetchServiceOrdersUseCase {
     endDate,
   }: FetchServiceOrdersUseCaseRequest): Promise<FetchServiceOrdersUseCaseResponse> {
     const filters: ServiceOrderFilters = {
+      number,
       status,
       technicianId,
       customerId,
@@ -49,7 +52,7 @@ export class FetchServiceOrdersUseCase {
     }
 
     const [serviceOrders, totalCount] = await Promise.all([
-      this.serviceOrdersRepository.findMany(tenantId, filters, {
+      this.serviceOrdersRepository.findManySummaries(tenantId, filters, {
         page,
         perPage,
       }),

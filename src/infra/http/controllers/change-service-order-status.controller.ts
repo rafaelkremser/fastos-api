@@ -11,6 +11,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { z } from 'zod'
 import { ZodValidationPipe } from '@/infra/http/pipes/zod-validation-pipe'
+import { ORDER_STATUSES } from '@/domain/service-order/enterprise/entities/service-order'
 import { CurrentUser } from '@/infra/auth/current-user.decorator'
 import { UserPayload } from '@/infra/auth/jwt.strategy'
 import { ALL_ROLES, Roles } from '@/infra/auth/roles.decorator'
@@ -20,17 +21,7 @@ import { NotAllowedError } from '@/core/errors/not-allowed-error'
 import { ServiceOrderPresenter } from '../presenters/service-order-presenter'
 
 const changeStatusBodySchema = z.object({
-  status: z.enum([
-    'OPEN',
-    'IN_ANALYSIS',
-    'WAITING_APPROVAL',
-    'APPROVED',
-    'IN_PROGRESS',
-    'WAITING_PARTS',
-    'COMPLETED',
-    'DELIVERED',
-    'CANCELLED',
-  ]),
+  status: z.enum(ORDER_STATUSES),
   notes: z.string().optional(),
 })
 

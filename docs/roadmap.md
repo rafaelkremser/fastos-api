@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** A2 e A3 (OS com cliente e aparelho na lista; lista de usuários da loja), quando o frontend chegar às OS (F3). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** A3 (lista de usuários da loja), para o frontend escolher o técnico da OS (F3). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -66,6 +66,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - Cadastro com aprovação ([PR #13](https://github.com/rafaelkremser/fastos-api/pull/13)), detalhado abaixo.
 - A1, pedido do frontend: as listas de clientes, aparelhos do cliente e OS devolvem `meta: { page, perPage, totalCount }`, contado com os mesmos filtros da página ([PR #14](https://github.com/rafaelkremser/fastos-api/pull/14)). Testado contra o banco real: 23 clientes deram 20 na primeira página e `totalCount` 23; a busca e o filtro de status contaram só o que encontram.
 - A6, pedido do frontend: excluir cliente ou aparelho que tem OS responde 409, e excluir um cliente sem OS apaga os aparelhos dele na mesma transação ([PR #15](https://github.com/rafaelkremser/fastos-api/pull/15)). Antes, os três casos davam 500, porque o banco recusa apagar registro referenciado e os casos de uso não verificavam. Testado contra o banco real antes e depois da correção.
+- A2, pedido do frontend: a lista de OS devolve um resumo de cada uma, com nome e telefone do cliente, tipo, marca e modelo do aparelho e o nome do técnico, lidos na mesma consulta; ganhou o filtro `number`; e o filtro `status` passou a ser validado, respondendo 400 em vez de 500 ([PR #16](https://github.com/rafaelkremser/fastos-api/pull/16)). Testado contra o banco real.
 
 **Cadastro com aprovação.** Feito.
 - **A loja nova nasce inativa.** O cadastro continua público, mas ninguém entra até a loja ser liberada. Com `TENANT_AUTO_APPROVAL=true`, volta a nascer liberada, para quando houver cobrança (ver "Assinatura").
@@ -176,7 +177,6 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - **Cadastros simultâneos com o mesmo endereço ou e-mail:** se dois pedidos passarem pela verificação ao mesmo tempo, o segundo esbarra na restrição de unicidade do banco e recebe erro 500 em vez de 409. Graças à transação, nada fica gravado pela metade.
 - **Gravações simultâneas na mesma OS:** cada gravação regrava a OS inteira com o que foi lido no começo do pedido. Se duas pessoas mexerem na mesma OS no mesmo instante (por exemplo, uma edita o diagnóstico enquanto a outra adiciona um item), a segunda gravação desfaz a mudança da primeira nos campos da OS. Os itens não se perdem, porque são gravados um a um. A solução é controlar a versão: a gravação só vale se a OS não mudou desde a leitura, e senão responde 409.
 - **Loja inativa hoje quer dizer "aguardando aprovação".** Quando houver suspensão por falta de pagamento (S-4), o login e o frontend vão precisar distinguir os dois casos, com um status no lugar do `isActive`.
-- **O filtro de status da lista de OS não é validado:** `GET /service-orders?status=XYZ` responde 500 em vez de 400. Entra no A2, que mexe na mesma rota.
 - **Cliente com OS não pode ser excluído,** nem por pedido do próprio cliente (LGPD). A saída é anonimizar os dados pessoais e manter a OS, junto com a exclusão lógica do P3-3.
 - **Editar um cliente não confere telefone repetido:** só o cadastro verifica, e o banco não tem restrição de unicidade (só um índice), então a edição aceita o telefone de outro cliente da loja.
 - **Ninguém é avisado de um cadastro novo:** a fila só aparece com `npm run tenants:inactive`. As notificações (P3-4) resolvem.
@@ -237,6 +237,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-27 | Loja inativa responde 403 no login só quando a senha está certa | Quem já provou ser usuário da loja pode saber que ela aguarda aprovação; para os outros, a resposta continua igual à da senha errada | Sempre 401, sem explicar; avisar mesmo com a senha errada |
 | 2026-10-27 | Planos e cobrança só depois dos primeiros clientes | Preço definido com dados reais; uma tela de planos sem cobrança prometeria o que o sistema não faz | Tela de planos já no cadastro |
 | 2026-10-28 | Cliente ou aparelho com OS não pode ser excluído (409); excluir um cliente sem OS leva os aparelhos dele junto | A OS é o histórico da loja e precisa do cliente e do aparelho. Exigir apagar aparelho por aparelho antes do cliente só atrapalharia | Apagar as OS junto; bloquear a exclusão de cliente que tem aparelho |
+| 2026-10-28 | A lista de OS devolve um resumo (`ServiceOrderSummary`) com os nomes do cliente, do aparelho e do técnico, e não a OS inteira | A tabela mostra nomes, não IDs, e uma consulta só traz tudo; os detalhes completos ficam em `GET /service-orders/:id` | O frontend buscar cliente e aparelho de cada linha; a lista devolver a OS inteira com os itens |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
