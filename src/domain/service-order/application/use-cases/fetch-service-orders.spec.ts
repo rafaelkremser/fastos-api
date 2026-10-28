@@ -105,6 +105,30 @@ describe('Fetch Service Orders', () => {
     })
   })
 
+  it('should list the orders whose customer still has to be told', async () => {
+    const tenantId = new UniqueEntityID()
+    addOrder(tenantId, { number: 1, status: 'COMPLETED' })
+    addOrder(tenantId, { number: 2, status: 'WAITING_APPROVAL' })
+    addOrder(tenantId, { number: 3, status: 'IN_PROGRESS' })
+    const { order: told } = addOrder(tenantId, {
+      number: 4,
+      status: 'COMPLETED',
+    })
+    told.registerCustomerNotice()
+
+    const result = await sut.execute({
+      tenantId: tenantId.toString(),
+      page: 1,
+      needsCustomerNotice: true,
+    })
+
+    expect(
+      result.value?.serviceOrders.map((order) => order.number).sort(),
+    ).toEqual([1, 2])
+    expect(result.value?.serviceOrders[0].needsCustomerNotice).toBe(true)
+    expect(result.value?.totalCount).toBe(2)
+  })
+
   it('should find an order by its number', async () => {
     const tenantId = new UniqueEntityID()
     addOrder(tenantId, { number: 41 })

@@ -45,6 +45,7 @@ export class PrismaServiceOrderMapper {
         customerNotes: raw.customerNotes,
         warrantyDays: raw.warrantyDays ?? 90,
         warrantyUntil: raw.warrantyUntil,
+        customerNotifiedAt: raw.customerNotifiedAt,
         items: new ServiceOrderItemList(
           raw.items.map(PrismaServiceOrderItemMapper.toDomain),
         ),
@@ -82,6 +83,7 @@ export class PrismaServiceOrderMapper {
       customerNotes: serviceOrder.customerNotes,
       warrantyDays: serviceOrder.warrantyDays,
       warrantyUntil: serviceOrder.warrantyUntil,
+      customerNotifiedAt: serviceOrder.customerNotifiedAt,
       createdAt: serviceOrder.createdAt,
       updatedAt: serviceOrder.updatedAt,
     }
