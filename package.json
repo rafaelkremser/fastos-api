@@ -25,7 +25,8 @@
     "prisma:studio": "prisma studio",
     "gen:keys": "node scripts/generate-jwt-keys.mjs",
     "tenants:inactive": "node dist/infra/cli/tenants inactive",
-    "tenants:activate": "node dist/infra/cli/tenants activate"
+    "tenants:activate": "node dist/infra/cli/tenants activate",
+    "seed:dev": "node scripts/seed-dev.mjs"
   },
   "dependencies": {
     "@neon/config": "^1.9.1",
