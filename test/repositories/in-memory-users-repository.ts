@@ -1,4 +1,7 @@
-import { UsersRepository } from '@/domain/account/application/repositories/users-repository'
+import {
+  UserFilters,
+  UsersRepository,
+} from '@/domain/account/application/repositories/users-repository'
 import { User } from '@/domain/account/enterprise/entities/user'
 
 export class InMemoryUsersRepository implements UsersRepository {
@@ -16,8 +19,11 @@ export class InMemoryUsersRepository implements UsersRepository {
     )
   }
 
-  async findManyByTenantId(tenantId: string) {
-    return this.items.filter((item) => item.tenantId.toString() === tenantId)
+  async findManyByTenantId(tenantId: string, filters: UserFilters = {}) {
+    return this.items
+      .filter((item) => item.tenantId.toString() === tenantId)
+      .filter((item) => !filters.role || item.role === filters.role)
+      .sort((a, b) => a.name.localeCompare(b.name))
   }
 
   async create(user: User) {

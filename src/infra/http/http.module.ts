@@ -10,6 +10,7 @@ import { AuthenticateController } from './controllers/authenticate.controller'
 import { RefreshAccessTokenController } from './controllers/refresh-access-token.controller'
 import { CreateUserController } from './controllers/create-user.controller'
 import { GetUserController } from './controllers/get-user.controller'
+import { FetchUsersController } from './controllers/fetch-users.controller'
 import { GetTenantController } from './controllers/get-tenant.controller'
 
 // Customer Controllers
@@ -42,6 +43,7 @@ import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/re
 import { AuthenticateUserUseCase } from '@/domain/account/application/use-cases/authenticate-user'
 import { RefreshAccessTokenUseCase } from '@/domain/account/application/use-cases/refresh-access-token'
 import { CreateUserUseCase } from '@/domain/account/application/use-cases/create-user'
+import { FetchUsersUseCase } from '@/domain/account/application/use-cases/fetch-users'
 import { GetUserUseCase } from '@/domain/account/application/use-cases/get-user'
 import { GetTenantUseCase } from '@/domain/account/application/use-cases/get-tenant'
 
@@ -83,6 +85,7 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     RefreshAccessTokenController,
     CreateUserController,
     GetUserController,
+    FetchUsersController,
     GetTenantController,
     // Customer
     CreateCustomerController,
@@ -113,6 +116,7 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     AuthenticateUserUseCase,
     RefreshAccessTokenUseCase,
     CreateUserUseCase,
+    FetchUsersUseCase,
     GetUserUseCase,
     GetTenantUseCase,
     // Customer Use Cases
