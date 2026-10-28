@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** A3 (lista de usuários da loja), para o frontend escolher o técnico da OS (F3). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** nada pendente na API para o F3; o trabalho volta ao frontend. O A4 (métricas) só entra no dashboard (F5). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -67,6 +67,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - A1, pedido do frontend: as listas de clientes, aparelhos do cliente e OS devolvem `meta: { page, perPage, totalCount }`, contado com os mesmos filtros da página ([PR #14](https://github.com/rafaelkremser/fastos-api/pull/14)). Testado contra o banco real: 23 clientes deram 20 na primeira página e `totalCount` 23; a busca e o filtro de status contaram só o que encontram.
 - A6, pedido do frontend: excluir cliente ou aparelho que tem OS responde 409, e excluir um cliente sem OS apaga os aparelhos dele na mesma transação ([PR #15](https://github.com/rafaelkremser/fastos-api/pull/15)). Antes, os três casos davam 500, porque o banco recusa apagar registro referenciado e os casos de uso não verificavam. Testado contra o banco real antes e depois da correção.
 - A2, pedido do frontend: a lista de OS devolve um resumo de cada uma, com nome e telefone do cliente, tipo, marca e modelo do aparelho e o nome do técnico, lidos na mesma consulta; ganhou o filtro `number`; e o filtro `status` passou a ser validado, respondendo 400 em vez de 500 ([PR #16](https://github.com/rafaelkremser/fastos-api/pull/16)). Testado contra o banco real.
+- A3, pedido do frontend: `GET /users` lista a equipe da loja em ordem alfabética, com filtro `role` (por exemplo, só técnicos), sem paginação ([PR #18](https://github.com/rafaelkremser/fastos-api/pull/18)). Testado contra o banco real, inclusive com atendente vendo a lista e recebendo 403 ao tentar criar alguém.
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
 
 **Cadastro com aprovação.** Feito.
@@ -239,6 +240,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-27 | Planos e cobrança só depois dos primeiros clientes | Preço definido com dados reais; uma tela de planos sem cobrança prometeria o que o sistema não faz | Tela de planos já no cadastro |
 | 2026-10-28 | Cliente ou aparelho com OS não pode ser excluído (409); excluir um cliente sem OS leva os aparelhos dele junto | A OS é o histórico da loja e precisa do cliente e do aparelho. Exigir apagar aparelho por aparelho antes do cliente só atrapalharia | Apagar as OS junto; bloquear a exclusão de cliente que tem aparelho |
 | 2026-10-28 | A lista de OS devolve um resumo (`ServiceOrderSummary`) com os nomes do cliente, do aparelho e do técnico, e não a OS inteira | A tabela mostra nomes, não IDs, e uma consulta só traz tudo; os detalhes completos ficam em `GET /service-orders/:id` | O frontend buscar cliente e aparelho de cada linha; a lista devolver a OS inteira com os itens |
+| 2026-10-28 | Todos os papéis veem a equipe da loja; a lista vem inteira, sem paginação | A lista de OS filtra por técnico para qualquer papel, e a equipe de uma loja cabe numa resposta | Só dono e administrador; lista paginada |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
@@ -252,6 +254,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | OS: abrir, listar, ver histórico, mudar status | ✓ | ✓ | ✓ | ✓ |
 | OS: editar (inclusive valores e desconto), adicionar e remover itens | ✓ | ✓ | ✓ | |
 | OS: atribuir técnico | ✓ | ✓ | | |
+| Ver a equipe da loja (lista de usuários) | ✓ | ✓ | ✓ | ✓ |
 | Criar usuários | ✓ | ✓ (só técnico e atendente) | | |
 
 Ninguém cria um segundo dono.
