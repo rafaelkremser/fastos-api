@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common'
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import { ServiceOrderHistoryRepository } from '@/domain/service-order/application/repositories/service-order-history-repository'
 import { ServiceOrderHistory } from '@/domain/service-order/enterprise/entities/service-order-history'
 import { PrismaService } from '../prisma.service'
@@ -13,7 +16,7 @@ export class PrismaServiceOrderHistoryRepository
 
   async findManyByServiceOrderId(
     serviceOrderId: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ): Promise<ServiceOrderHistory[]> {
     const history = await this.prisma.client.serviceOrderHistory.findMany({
       where: { serviceOrderId },

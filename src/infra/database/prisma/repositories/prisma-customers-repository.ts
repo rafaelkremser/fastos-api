@@ -1,9 +1,26 @@
 import { Injectable } from '@nestjs/common'
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import { Prisma } from '@prisma/client'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import { CustomersRepository } from '@/domain/customer/application/repositories/customers-repository'
 import { Customer } from '@/domain/customer/enterprise/entities/customer'
 import { PrismaService } from '../prisma.service'
 import { PrismaCustomerMapper } from '../mappers/prisma-customer-mapper'
+
+function whereNameContains(
+  tenantId: string,
+  name: string,
+): Prisma.CustomerWhereInput {
+  return {
+    tenantId,
+    name: {
+      contains: name,
+      mode: 'insensitive',
+    },
+  }
+}
 
 @Injectable()
 export class PrismaCustomersRepository implements CustomersRepository {
@@ -38,7 +55,7 @@ export class PrismaCustomersRepository implements CustomersRepository {
 
   async findMany(
     tenantId: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ): Promise<Customer[]> {
     const customers = await this.prisma.client.customer.findMany({
       where: { tenantId },
@@ -53,16 +70,10 @@ export class PrismaCustomersRepository implements CustomersRepository {
   async searchByName(
     tenantId: string,
     name: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ): Promise<Customer[]> {
     const customers = await this.prisma.client.customer.findMany({
-      where: {
-        tenantId,
-        name: {
-          contains: name,
-          mode: 'insensitive',
-        },
-      },
+      where: whereNameContains(tenantId, name),
       orderBy: { name: 'asc' },
       take: perPage,
       skip: (page - 1) * perPage,
@@ -74,6 +85,12 @@ export class PrismaCustomersRepository implements CustomersRepository {
   async countByTenantId(tenantId: string): Promise<number> {
     return this.prisma.client.customer.count({
       where: { tenantId },
+    })
+  }
+
+  async countByName(tenantId: string, name: string): Promise<number> {
+    return this.prisma.client.customer.count({
+      where: whereNameContains(tenantId, name),
     })
   }
 

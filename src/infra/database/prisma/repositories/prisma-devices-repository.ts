@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common'
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import { DevicesRepository } from '@/domain/device/application/repositories/devices-repository'
 import { Device } from '@/domain/device/enterprise/entities/device'
 import { PrismaService } from '../prisma.service'
@@ -24,7 +27,7 @@ export class PrismaDevicesRepository implements DevicesRepository {
   async findManyByCustomerId(
     tenantId: string,
     customerId: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ): Promise<Device[]> {
     const devices = await this.prisma.client.device.findMany({
       where: {
@@ -39,9 +42,21 @@ export class PrismaDevicesRepository implements DevicesRepository {
     return devices.map(PrismaDeviceMapper.toDomain)
   }
 
+  async countByCustomerId(
+    tenantId: string,
+    customerId: string,
+  ): Promise<number> {
+    return this.prisma.client.device.count({
+      where: {
+        tenantId,
+        customerId,
+      },
+    })
+  }
+
   async findMany(
     tenantId: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ): Promise<Device[]> {
     const devices = await this.prisma.client.device.findMany({
       where: { tenantId },

@@ -14,6 +14,8 @@ export abstract class CustomersRepository {
     params: PaginationParams,
   ): Promise<Customer[]>
   abstract countByTenantId(tenantId: string): Promise<number>
+  // Counts what searchByName finds, across all pages
+  abstract countByName(tenantId: string, name: string): Promise<number>
   abstract create(customer: Customer): Promise<void>
   abstract save(customer: Customer): Promise<void>
   abstract delete(customer: Customer): Promise<void>

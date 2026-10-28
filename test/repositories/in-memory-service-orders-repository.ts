@@ -1,5 +1,8 @@
 import { DomainEvents } from '@/core/events/domain-events'
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import {
   ServiceOrderFilters,
   ServiceOrdersRepository,
@@ -31,8 +34,18 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
   async findMany(
     tenantId: string,
     filters: ServiceOrderFilters,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ) {
+    return this.matching(tenantId, filters)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice((page - 1) * perPage, page * perPage)
+  }
+
+  async count(tenantId: string, filters: ServiceOrderFilters) {
+    return this.matching(tenantId, filters).length
+  }
+
+  private matching(tenantId: string, filters: ServiceOrderFilters) {
     return this.items
       .filter((item) => item.tenantId.toString() === tenantId)
       .filter((item) => !filters.status || item.status === filters.status)
@@ -46,8 +59,6 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
           !filters.customerId ||
           item.customerId.toString() === filters.customerId,
       )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice((page - 1) * perPage, page * perPage)
   }
 
   async countByStatus(tenantId: string) {

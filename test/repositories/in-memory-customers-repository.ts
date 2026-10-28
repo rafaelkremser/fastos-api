@@ -1,4 +1,7 @@
-import { PaginationParams } from '@/core/repositories/pagination-params'
+import {
+  DEFAULT_PER_PAGE,
+  PaginationParams,
+} from '@/core/repositories/pagination-params'
 import { CustomersRepository } from '@/domain/customer/application/repositories/customers-repository'
 import { Customer } from '@/domain/customer/enterprise/entities/customer'
 
@@ -17,7 +20,10 @@ export class InMemoryCustomersRepository implements CustomersRepository {
     )
   }
 
-  async findMany(tenantId: string, { page, perPage = 20 }: PaginationParams) {
+  async findMany(
+    tenantId: string,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
+  ) {
     return this.items
       .filter((item) => item.tenantId.toString() === tenantId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -27,11 +33,9 @@ export class InMemoryCustomersRepository implements CustomersRepository {
   async searchByName(
     tenantId: string,
     name: string,
-    { page, perPage = 20 }: PaginationParams,
+    { page, perPage = DEFAULT_PER_PAGE }: PaginationParams,
   ) {
-    return this.items
-      .filter((item) => item.tenantId.toString() === tenantId)
-      .filter((item) => item.name.toLowerCase().includes(name.toLowerCase()))
+    return this.withNameContaining(tenantId, name)
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice((page - 1) * perPage, page * perPage)
   }
@@ -39,6 +43,16 @@ export class InMemoryCustomersRepository implements CustomersRepository {
   async countByTenantId(tenantId: string) {
     return this.items.filter((item) => item.tenantId.toString() === tenantId)
       .length
+  }
+
+  async countByName(tenantId: string, name: string) {
+    return this.withNameContaining(tenantId, name).length
+  }
+
+  private withNameContaining(tenantId: string, name: string) {
+    return this.items
+      .filter((item) => item.tenantId.toString() === tenantId)
+      .filter((item) => item.name.toLowerCase().includes(name.toLowerCase()))
   }
 
   async create(customer: Customer) {
