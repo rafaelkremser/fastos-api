@@ -19,4 +19,8 @@ export abstract class DevicesRepository {
   abstract create(device: Device): Promise<void>
   abstract save(device: Device): Promise<void>
   abstract delete(device: Device): Promise<void>
+  abstract deleteManyByCustomerId(
+    tenantId: string,
+    customerId: string,
+  ): Promise<void>
 }

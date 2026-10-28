@@ -59,6 +59,10 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
           !filters.customerId ||
           item.customerId.toString() === filters.customerId,
       )
+      .filter(
+        (item) =>
+          !filters.deviceId || item.deviceId.toString() === filters.deviceId,
+      )
   }
 
   async countByStatus(tenantId: string) {
