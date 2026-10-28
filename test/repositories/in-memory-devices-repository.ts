@@ -52,4 +52,12 @@ export class InMemoryDevicesRepository implements DevicesRepository {
   async delete(device: Device) {
     this.items = this.items.filter((item) => !item.id.equals(device.id))
   }
+
+  async deleteManyByCustomerId(tenantId: string, customerId: string) {
+    this.items = this.items.filter(
+      (item) =>
+        item.tenantId.toString() !== tenantId ||
+        item.customerId.toString() !== customerId,
+    )
+  }
 }

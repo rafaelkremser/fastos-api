@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -14,6 +15,7 @@ import { Roles } from '@/infra/auth/roles.decorator'
 import { DeleteDeviceUseCase } from '@/domain/device/application/use-cases/delete-device'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
+import { DeviceHasServiceOrdersError } from '@/domain/device/application/use-cases/errors/device-has-service-orders-error'
 
 @ApiTags('Devices')
 @ApiBearerAuth()
@@ -41,6 +43,8 @@ export class DeleteDeviceController {
           throw new NotFoundException(error.message)
         case NotAllowedError:
           throw new ForbiddenException(error.message)
+        case DeviceHasServiceOrdersError:
+          throw new ConflictException(error.message)
         default:
           throw new BadRequestException(error.message)
       }

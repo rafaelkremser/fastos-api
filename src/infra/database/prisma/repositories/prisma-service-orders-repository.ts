@@ -27,6 +27,7 @@ function whereFilters(
     ...(filters.status && { status: filters.status as any }),
     ...(filters.technicianId && { technicianId: filters.technicianId }),
     ...(filters.customerId && { customerId: filters.customerId }),
+    ...(filters.deviceId && { deviceId: filters.deviceId }),
     ...(filters.startDate &&
       filters.endDate && {
         createdAt: {

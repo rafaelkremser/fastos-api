@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -14,6 +15,7 @@ import { Roles } from '@/infra/auth/roles.decorator'
 import { DeleteCustomerUseCase } from '@/domain/customer/application/use-cases/delete-customer'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
+import { CustomerHasServiceOrdersError } from '@/domain/customer/application/use-cases/errors/customer-has-service-orders-error'
 
 @ApiTags('Customers')
 @ApiBearerAuth()
@@ -41,6 +43,8 @@ export class DeleteCustomerController {
           throw new NotFoundException(error.message)
         case NotAllowedError:
           throw new ForbiddenException(error.message)
+        case CustomerHasServiceOrdersError:
+          throw new ConflictException(error.message)
         default:
           throw new BadRequestException(error.message)
       }

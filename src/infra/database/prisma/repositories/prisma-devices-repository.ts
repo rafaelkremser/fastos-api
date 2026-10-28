@@ -90,4 +90,13 @@ export class PrismaDevicesRepository implements DevicesRepository {
       where: { id: device.id.toString() },
     })
   }
+
+  async deleteManyByCustomerId(
+    tenantId: string,
+    customerId: string,
+  ): Promise<void> {
+    await this.prisma.client.device.deleteMany({
+      where: { tenantId, customerId },
+    })
+  }
 }

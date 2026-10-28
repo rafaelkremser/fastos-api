@@ -5,6 +5,7 @@ export interface ServiceOrderFilters {
   status?: string
   technicianId?: string
   customerId?: string
+  deviceId?: string
   startDate?: Date
   endDate?: Date
 }
