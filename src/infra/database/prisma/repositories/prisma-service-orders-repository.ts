@@ -5,11 +5,14 @@ import {
   PaginationParams,
 } from '@/core/repositories/pagination-params'
 import {
+  DailyDeliveredTotals,
+  DeliveredTotals,
   ServiceOrdersRepository,
   ServiceOrderFilters,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import {
+  ACTIVE_STATUSES,
   CUSTOMER_NOTICE_STATUSES,
   ServiceOrder,
 } from '@/domain/service-order/enterprise/entities/service-order'
@@ -25,6 +28,39 @@ import { DomainEvents } from '@/core/events/domain-events'
 const withItems = {
   items: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.ServiceOrderInclude
+
+// The columns are timestamps without time zone, holding UTC. The instants go
+// as ISO text and are turned into UTC there, whatever the session time zone
+function utc(date: Date) {
+  return Prisma.sql`(${date.toISOString()}::timestamptz AT TIME ZONE 'UTC')`
+}
+
+// Orders delivered in the period, with the order total of
+// ServiceOrder.totalWithDiscount: the final cost, or else the quote, or else
+// the items, minus the discount
+function deliveredOrders(tenantId: string, start: Date, end: Date) {
+  return Prisma.sql`
+    FROM (
+      SELECT
+        so.delivered_date,
+        COALESCE(
+          so.final_cost,
+          so.estimated_cost,
+          (
+            SELECT SUM(item.total_price)
+            FROM service_order_items item
+            WHERE item.service_order_id = so.id
+          ),
+          0
+        ) - COALESCE(so.discount, 0) AS total
+      FROM service_orders so
+      WHERE so.tenant_id = ${tenantId}
+        AND so.status = 'DELIVERED'
+        AND so.delivered_date >= ${utc(start)}
+        AND so.delivered_date < ${utc(end)}
+    ) delivered
+  `
+}
 
 function whereFilters(
   tenantId: string,
@@ -129,6 +165,51 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
       },
       {} as Record<string, number>,
     )
+  }
+
+  async countLate(tenantId: string, today: Date): Promise<number> {
+    return this.prisma.client.serviceOrder.count({
+      where: {
+        tenantId,
+        status: { in: ACTIVE_STATUSES },
+        estimatedDate: { lt: today },
+      },
+    })
+  }
+
+  async sumDelivered(
+    tenantId: string,
+    start: Date,
+    end: Date,
+  ): Promise<DeliveredTotals> {
+    const [totals] = await this.prisma.client.$queryRaw<DeliveredTotals[]>`
+      SELECT
+        COUNT(*)::int AS delivered,
+        COALESCE(SUM(total), 0)::float8 AS revenue
+      ${deliveredOrders(tenantId, start, end)}
+    `
+
+    return totals
+  }
+
+  async sumDeliveredByDay(
+    tenantId: string,
+    start: Date,
+    end: Date,
+    timeZone: string,
+  ): Promise<DailyDeliveredTotals[]> {
+    return this.prisma.client.$queryRaw<DailyDeliveredTotals[]>`
+      SELECT
+        to_char(
+          (delivered_date AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone},
+          'YYYY-MM-DD'
+        ) AS day,
+        COUNT(*)::int AS delivered,
+        SUM(total)::float8 AS revenue
+      ${deliveredOrders(tenantId, start, end)}
+      GROUP BY 1
+      ORDER BY 1
+    `
   }
 
   async reserveNextNumber(tenantId: string): Promise<number> {
