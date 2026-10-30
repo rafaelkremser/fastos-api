@@ -8,6 +8,8 @@ import {
   DailyDeliveredTotals,
   ServiceOrderFilters,
   ServiceOrdersRepository,
+  TechnicianTotals,
+  TechnicianTotalsPeriod,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import {
@@ -181,6 +183,49 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
     }
 
     return [...days.values()].sort((a, b) => a.day.localeCompare(b.day))
+  }
+
+  async sumByTechnician(
+    tenantId: string,
+    { today, start, end }: TechnicianTotalsPeriod,
+  ) {
+    const rows = new Map<string | null, TechnicianTotals>()
+    const within = (date: Date | null) =>
+      date !== null && date >= start && date < end
+
+    for (const order of this.items) {
+      if (order.tenantId.toString() !== tenantId) continue
+
+      const technicianId = order.technicianId?.toString() ?? null
+      const row = rows.get(technicianId) ?? {
+        technicianId,
+        active: 0,
+        late: 0,
+        completed: 0,
+        delivered: 0,
+        revenue: 0,
+      }
+      const isActive = ACTIVE_STATUSES.includes(order.status)
+
+      if (isActive) row.active += 1
+      if (isActive && order.estimatedDate && order.estimatedDate < today) {
+        row.late += 1
+      }
+      if (
+        (order.status === 'COMPLETED' || order.status === 'DELIVERED') &&
+        within(order.completedDate)
+      ) {
+        row.completed += 1
+      }
+      if (order.status === 'DELIVERED' && within(order.deliveredDate)) {
+        row.delivered += 1
+        row.revenue += order.totalWithDiscount
+      }
+
+      rows.set(technicianId, row)
+    }
+
+    return [...rows.values()]
   }
 
   async reserveNextNumber(tenantId: string) {
