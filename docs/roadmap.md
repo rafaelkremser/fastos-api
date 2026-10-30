@@ -70,9 +70,9 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - A3, pedido do frontend: `GET /users` lista a equipe da loja em ordem alfabética, com filtro `role` (por exemplo, só técnicos), sem paginação ([PR #18](https://github.com/rafaelkremser/fastos-api/pull/18)). Testado contra o banco real, inclusive com atendente vendo a lista e recebendo 403 ao tentar criar alguém.
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
 - A9, aviso ao cliente ([PR #19](https://github.com/rafaelkremser/fastos-api/pull/19)), detalhado abaixo.
-- A4, métricas para o dashboard ([PR #20](https://github.com/rafaelkremser/fastos-api/pull/20)), detalhado abaixo.
+- A4, métricas para o dashboard ([PR #20](https://github.com/rafaelkremser/fastos-api/pull/20)), e A13, por técnico e por etapa ([PR #21](https://github.com/rafaelkremser/fastos-api/pull/21)), detalhados abaixo.
 
-**A4: métricas.** Feito.
+**A4 e A13: métricas.** Feito.
 - **`GET /metrics/operations`,** para todos os papéis: OS por status (todos os status, os vazios com zero), em andamento (de "Aberta" a "Aguardando peças", `ACTIVE_STATUSES`), atrasadas (em andamento com a previsão antes de hoje), prontas para retirada e esperando aviso.
 - **`GET /metrics/revenue`,** só para dono e administrador:
   - entregas e faturamento do mês, do dia 1 até agora;
@@ -81,7 +81,9 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - **Faturamento** é o total das OS entregues, contadas no dia da entrega, pela regra do total da OS: valor final, senão orçamento, senão a soma dos itens, menos o desconto. A conta roda no banco (`$queryRaw`, o primeiro SQL escrito à mão do projeto), e as datas são passadas em texto ISO e convertidas para UTC lá, sem depender do fuso da sessão.
 - **Dias e meses no fuso de Brasília** (`STORE_TIME_ZONE` em `src/core/time/time-zone.ts`), porque a loja não tem fuso próprio ainda.
 - **Índice dos itens por OS:** a tabela de itens não tinha índice em `service_order_id`, e o Postgres não cria um para chave estrangeira sozinho. Abrir uma OS lia a tabela inteira de itens; agora usa o índice, e as métricas também.
-- **Testado contra o banco real,** num branch temporário com entregas espalhadas em agosto, setembro e outubro, inclusive uma no dia 30/09 às 23h de Brasília (já 1º/10 em UTC). Os números bateram com a conta feita à mão: 4 entregas e R$ 929,90 no mês, 1 e R$ 250,00 no mesmo trecho de setembro, 2 atrasadas (a que vence hoje não conta), 3 esperando aviso. O técnico vê as operações e recebe 403 no faturamento.
+- **`GET /metrics/technicians`** (A13), só para dono e administrador: por técnico, em andamento e atrasadas agora; concluídas (ficaram prontas), entregues e faturamento no mês. Lista quem pode pegar OS (ativo e não atendente), mesmo sem nenhuma, e quem tem OS atribuída; as sem técnico vêm à parte. O técnico não vê nem os próprios números.
+- **`GET /metrics/stage-times`** (A13), só para dono e administrador: a mediana do tempo que as OS ficam em cada status, de "Aberta" a "Pronta", nos últimos 90 dias, para a loja toda e nunca por pessoa. Sai do histórico de mudanças de status; a primeira etapa conta da entrada da OS, porque abrir a OS não grava histórico. Uma etapa entra quando termina, com o tempo desde que começou, mesmo antes dos 90 dias.
+- **Testado contra o banco real,** num branch temporário com entregas espalhadas em agosto, setembro e outubro, inclusive uma no dia 30/09 às 23h de Brasília (já 1º/10 em UTC). Os números bateram com a conta feita à mão: 4 entregas e R$ 929,90 no mês, 1 e R$ 250,00 no mesmo trecho de setembro, 2 atrasadas (a que vence hoje não conta), 3 esperando aviso. O técnico vê as operações e recebe 403 no faturamento. Num segundo branch, com técnicos atribuídos e um histórico de status montado à mão: os números por técnico e os tempos por etapa bateram com a conta e com o teste unitário (2 h em "Aberta", 13 h em "Em análise", 3 dias em "Aguardando peças"), e o técnico recebe 403 nas duas rotas.
 
 **A9: aviso ao cliente.** Feito.
 - **O aviso é separado do status.** A OS guarda quando a loja avisou o cliente (`customer_notified_at`), e qualquer mudança de status apaga essa data, porque o aviso valia para o status anterior.
@@ -268,6 +270,9 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-30 | Faturamento é o total das OS entregues, no dia da entrega | A API não registra pagamentos; a entrega é quando o cliente costuma pagar | Contar quando a OS fica pronta; registrar pagamentos antes do dashboard |
 | 2026-10-30 | O mês corrente é comparado com o mesmo trecho do mês anterior | Comparar o começo do mês com um mês inteiro sempre parece queda | Mês anterior inteiro, como no `pizza-shop` |
 | 2026-10-30 | Duas rotas de métricas, separadas por papel | O faturamento é só de dono e administrador; a operação é de todos. Cada rota tem um `@Roles` só | Uma rota que esconde campos conforme o papel |
+| 2026-10-30 | Números por técnico só para dono e administrador | Decisão do dono do projeto: o técnico não vê nem os próprios números, para não virar comparação dentro da equipe | O técnico ver a própria linha |
+| 2026-10-30 | Tempo por etapa para a loja toda, e não por técnico | O tempo de uma OS depende de peça, de aprovação do cliente e da dificuldade; por pessoa, seria injusto e viraria ranking. Por etapa, mostra onde o trabalho trava | Tempo médio de conserto por técnico |
+| 2026-10-30 | Mediana dos últimos 90 dias, calculada no caso de uso | A mediana não se mexe com uma OS fora do comum; 90 dias dão algumas OS por etapa numa loja pequena. O repositório só busca as mudanças, e a conta fica testada num lugar só | Média; SQL com funções de janela |
 | 2026-10-30 | Fuso fixo de Brasília para dias e meses | Toda loja é do Brasil por enquanto, e o país não tem horário de verão desde 2019 | Fuso por loja, que exige campo novo e tela |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
@@ -286,5 +291,6 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | Criar usuários | ✓ | ✓ (só técnico e atendente) | | |
 | Ver os números da operação (OS por status, atrasadas, avisos) | ✓ | ✓ | ✓ | ✓ |
 | Ver o faturamento | ✓ | ✓ | | |
+| Ver os números por técnico e o tempo em cada etapa | ✓ | ✓ | | |
 
 Ninguém cria um segundo dono.

@@ -3,7 +3,10 @@ import {
   DEFAULT_PER_PAGE,
   PaginationParams,
 } from '@/core/repositories/pagination-params'
-import { ServiceOrderHistoryRepository } from '@/domain/service-order/application/repositories/service-order-history-repository'
+import {
+  ServiceOrderHistoryRepository,
+  StatusChange,
+} from '@/domain/service-order/application/repositories/service-order-history-repository'
 import { ServiceOrderHistory } from '@/domain/service-order/enterprise/entities/service-order-history'
 import { PrismaService } from '../prisma.service'
 import { PrismaServiceOrderHistoryMapper } from '../mappers/prisma-service-order-history-mapper'
@@ -26,6 +29,39 @@ export class PrismaServiceOrderHistoryRepository
     })
 
     return history.map(PrismaServiceOrderHistoryMapper.toDomain)
+  }
+
+  async findStatusChanges(
+    tenantId: string,
+    since: Date,
+  ): Promise<StatusChange[]> {
+    const changes = await this.prisma.client.serviceOrderHistory.findMany({
+      where: {
+        action: 'STATUS_CHANGED',
+        serviceOrder: {
+          tenantId,
+          history: {
+            some: { action: 'STATUS_CHANGED', createdAt: { gte: since } },
+          },
+        },
+      },
+      orderBy: [{ serviceOrderId: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        serviceOrderId: true,
+        oldValue: true,
+        newValue: true,
+        createdAt: true,
+        serviceOrder: { select: { entryDate: true } },
+      },
+    })
+
+    return changes.map((change) => ({
+      serviceOrderId: change.serviceOrderId,
+      from: change.oldValue,
+      to: change.newValue,
+      changedAt: change.createdAt,
+      orderEntryDate: change.serviceOrder.entryDate,
+    }))
   }
 
   async create(history: ServiceOrderHistory): Promise<void> {

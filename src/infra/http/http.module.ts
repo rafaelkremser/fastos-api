@@ -40,6 +40,8 @@ import { RemoveServiceOrderItemController } from './controllers/remove-service-o
 import { FetchServiceOrderHistoryController } from './controllers/fetch-service-order-history.controller'
 import { GetOperationsMetricsController } from './controllers/get-operations-metrics.controller'
 import { GetRevenueMetricsController } from './controllers/get-revenue-metrics.controller'
+import { GetTechnicianMetricsController } from './controllers/get-technician-metrics.controller'
+import { GetStageTimesController } from './controllers/get-stage-times.controller'
 
 // Account Use Cases
 import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/register-tenant'
@@ -77,6 +79,8 @@ import { RemoveServiceOrderItemUseCase } from '@/domain/service-order/applicatio
 import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/application/use-cases/fetch-service-order-history'
 import { GetOperationsMetricsUseCase } from '@/domain/service-order/application/use-cases/get-operations-metrics'
 import { GetRevenueMetricsUseCase } from '@/domain/service-order/application/use-cases/get-revenue-metrics'
+import { GetTechnicianMetricsUseCase } from '@/domain/service-order/application/use-cases/get-technician-metrics'
+import { GetStageTimesUseCase } from '@/domain/service-order/application/use-cases/get-stage-times'
 
 @Module({
   imports: [
@@ -119,6 +123,8 @@ import { GetRevenueMetricsUseCase } from '@/domain/service-order/application/use
     // Metrics
     GetOperationsMetricsController,
     GetRevenueMetricsController,
+    GetTechnicianMetricsController,
+    GetStageTimesController,
   ],
   providers: [
     // Account Use Cases
@@ -155,6 +161,8 @@ import { GetRevenueMetricsUseCase } from '@/domain/service-order/application/use
     // Metrics Use Cases
     GetOperationsMetricsUseCase,
     GetRevenueMetricsUseCase,
+    GetTechnicianMetricsUseCase,
+    GetStageTimesUseCase,
   ],
 })
 export class HttpModule {}

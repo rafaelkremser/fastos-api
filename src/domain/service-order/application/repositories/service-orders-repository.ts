@@ -25,6 +25,24 @@ export interface DailyDeliveredTotals extends DeliveredTotals {
   day: string
 }
 
+// One technician's orders, or the unassigned ones (technicianId null)
+export interface TechnicianTotals extends DeliveredTotals {
+  technicianId: string | null
+  // Right now: active, and active past the due day
+  active: number
+  late: number
+  // In the period: orders that became ready (and stayed ready or were
+  // delivered since); delivered and revenue as in DeliveredTotals
+  completed: number
+}
+
+export interface TechnicianTotalsPeriod {
+  // Midnight UTC of today, the way due days are kept
+  today: Date
+  start: Date
+  end: Date
+}
+
 export abstract class ServiceOrdersRepository {
   abstract findById(id: string): Promise<ServiceOrder | null>
   abstract findByNumber(
@@ -59,6 +77,12 @@ export abstract class ServiceOrdersRepository {
     end: Date,
     timeZone: string,
   ): Promise<DailyDeliveredTotals[]>
+  // A row per technician with orders, and one for the unassigned ones if any;
+  // technicians without orders are left out
+  abstract sumByTechnician(
+    tenantId: string,
+    period: TechnicianTotalsPeriod,
+  ): Promise<TechnicianTotals[]>
   abstract reserveNextNumber(tenantId: string): Promise<number>
   abstract create(serviceOrder: ServiceOrder): Promise<void>
   abstract save(serviceOrder: ServiceOrder): Promise<void>

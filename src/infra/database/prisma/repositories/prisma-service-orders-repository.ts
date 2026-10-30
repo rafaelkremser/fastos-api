@@ -9,6 +9,8 @@ import {
   DeliveredTotals,
   ServiceOrdersRepository,
   ServiceOrderFilters,
+  TechnicianTotals,
+  TechnicianTotalsPeriod,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
 import {
@@ -35,29 +37,36 @@ function utc(date: Date) {
   return Prisma.sql`(${date.toISOString()}::timestamptz AT TIME ZONE 'UTC')`
 }
 
-// Orders delivered in the period, with the order total of
-// ServiceOrder.totalWithDiscount: the final cost, or else the quote, or else
-// the items, minus the discount
+// An order's total (so), as ServiceOrder.totalWithDiscount: the final cost,
+// or else the quote, or else the items, minus the discount
+const orderTotal = Prisma.sql`
+  COALESCE(
+    so.final_cost,
+    so.estimated_cost,
+    (
+      SELECT SUM(item.total_price)
+      FROM service_order_items item
+      WHERE item.service_order_id = so.id
+    ),
+    0
+  ) - COALESCE(so.discount, 0)
+`
+
+function deliveredBetween(start: Date, end: Date) {
+  return Prisma.sql`
+    so.status = 'DELIVERED'
+    AND so.delivered_date >= ${utc(start)}
+    AND so.delivered_date < ${utc(end)}
+  `
+}
+
+// Orders delivered in the period, with their totals
 function deliveredOrders(tenantId: string, start: Date, end: Date) {
   return Prisma.sql`
     FROM (
-      SELECT
-        so.delivered_date,
-        COALESCE(
-          so.final_cost,
-          so.estimated_cost,
-          (
-            SELECT SUM(item.total_price)
-            FROM service_order_items item
-            WHERE item.service_order_id = so.id
-          ),
-          0
-        ) - COALESCE(so.discount, 0) AS total
+      SELECT so.delivered_date, ${orderTotal} AS total
       FROM service_orders so
-      WHERE so.tenant_id = ${tenantId}
-        AND so.status = 'DELIVERED'
-        AND so.delivered_date >= ${utc(start)}
-        AND so.delivered_date < ${utc(end)}
+      WHERE so.tenant_id = ${tenantId} AND ${deliveredBetween(start, end)}
     ) delivered
   `
 }
@@ -209,6 +218,43 @@ export class PrismaServiceOrdersRepository implements ServiceOrdersRepository {
       ${deliveredOrders(tenantId, start, end)}
       GROUP BY 1
       ORDER BY 1
+    `
+  }
+
+  async sumByTechnician(
+    tenantId: string,
+    { today, start, end }: TechnicianTotalsPeriod,
+  ): Promise<TechnicianTotals[]> {
+    // The status is an enum; compared as text, the list can go as parameters
+    const isActive = Prisma.sql`so.status::text IN (${Prisma.join(ACTIVE_STATUSES)})`
+    const isDelivered = deliveredBetween(start, end)
+
+    return this.prisma.client.$queryRaw<TechnicianTotals[]>`
+      SELECT
+        technician_id AS "technicianId",
+        COUNT(*) FILTER (WHERE is_active)::int AS active,
+        COUNT(*) FILTER (WHERE is_late)::int AS late,
+        COUNT(*) FILTER (WHERE is_completed)::int AS completed,
+        COUNT(*) FILTER (WHERE is_delivered)::int AS delivered,
+        COALESCE(SUM(total) FILTER (WHERE is_delivered), 0)::float8 AS revenue
+      FROM (
+        SELECT
+          so.technician_id,
+          COALESCE(${isActive}, false) AS is_active,
+          COALESCE(${isActive} AND so.estimated_date < ${utc(today)}, false) AS is_late,
+          COALESCE(
+            so.status::text IN ('COMPLETED', 'DELIVERED')
+              AND so.completed_date >= ${utc(start)}
+              AND so.completed_date < ${utc(end)},
+            false
+          ) AS is_completed,
+          COALESCE(${isDelivered}, false) AS is_delivered,
+          -- Only the delivered ones need the total (and its items)
+          CASE WHEN ${isDelivered} THEN ${orderTotal} END AS total
+        FROM service_orders so
+        WHERE so.tenant_id = ${tenantId}
+      ) orders
+      GROUP BY technician_id
     `
   }
 
