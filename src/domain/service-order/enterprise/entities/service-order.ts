@@ -27,6 +27,16 @@ export const CUSTOMER_NOTICE_STATUSES: OrderStatus[] = [
   'COMPLETED',
 ]
 
+// Still being worked on: not ready, delivered or cancelled yet
+export const ACTIVE_STATUSES: OrderStatus[] = [
+  'OPEN',
+  'IN_ANALYSIS',
+  'WAITING_APPROVAL',
+  'APPROVED',
+  'IN_PROGRESS',
+  'WAITING_PARTS',
+]
+
 export type OrderPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
 
 export interface ServiceOrderProps {

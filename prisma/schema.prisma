@@ -207,6 +207,7 @@ model ServiceOrderItem {
 
   serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
 
+  @@index([serviceOrderId])
   @@map("service_order_items")
 }
 

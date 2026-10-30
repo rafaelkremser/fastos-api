@@ -3,12 +3,17 @@ import {
   DEFAULT_PER_PAGE,
   PaginationParams,
 } from '@/core/repositories/pagination-params'
+import { getDayInTimeZone } from '@/core/time/time-zone'
 import {
+  DailyDeliveredTotals,
   ServiceOrderFilters,
   ServiceOrdersRepository,
 } from '@/domain/service-order/application/repositories/service-orders-repository'
 import { ServiceOrderItemsRepository } from '@/domain/service-order/application/repositories/service-order-items-repository'
-import { ServiceOrder } from '@/domain/service-order/enterprise/entities/service-order'
+import {
+  ACTIVE_STATUSES,
+  ServiceOrder,
+} from '@/domain/service-order/enterprise/entities/service-order'
 import { ServiceOrderSummary } from '@/domain/service-order/enterprise/entities/value-objects/service-order-summary'
 import { InMemoryCustomersRepository } from './in-memory-customers-repository'
 import { InMemoryDevicesRepository } from './in-memory-devices-repository'
@@ -126,6 +131,56 @@ export class InMemoryServiceOrdersRepository implements ServiceOrdersRepository 
         counts[item.status] = (counts[item.status] ?? 0) + 1
         return counts
       }, {})
+  }
+
+  async countLate(tenantId: string, today: Date) {
+    return this.items.filter(
+      (item) =>
+        item.tenantId.toString() === tenantId &&
+        ACTIVE_STATUSES.includes(item.status) &&
+        item.estimatedDate !== null &&
+        item.estimatedDate < today,
+    ).length
+  }
+
+  private delivered(tenantId: string, start: Date, end: Date) {
+    return this.items.filter(
+      (item) =>
+        item.tenantId.toString() === tenantId &&
+        item.status === 'DELIVERED' &&
+        item.deliveredDate !== null &&
+        item.deliveredDate >= start &&
+        item.deliveredDate < end,
+    )
+  }
+
+  async sumDelivered(tenantId: string, start: Date, end: Date) {
+    const orders = this.delivered(tenantId, start, end)
+
+    return {
+      delivered: orders.length,
+      revenue: orders.reduce((sum, item) => sum + item.totalWithDiscount, 0),
+    }
+  }
+
+  async sumDeliveredByDay(
+    tenantId: string,
+    start: Date,
+    end: Date,
+    timeZone: string,
+  ) {
+    const days = new Map<string, DailyDeliveredTotals>()
+
+    for (const order of this.delivered(tenantId, start, end)) {
+      const day = getDayInTimeZone(order.deliveredDate!, timeZone)
+      const totals = days.get(day) ?? { day, delivered: 0, revenue: 0 }
+
+      totals.delivered += 1
+      totals.revenue += order.totalWithDiscount
+      days.set(day, totals)
+    }
+
+    return [...days.values()].sort((a, b) => a.day.localeCompare(b.day))
   }
 
   async reserveNextNumber(tenantId: string) {

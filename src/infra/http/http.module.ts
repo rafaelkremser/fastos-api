@@ -38,6 +38,8 @@ import { AssignTechnicianController } from './controllers/assign-technician.cont
 import { AddServiceOrderItemController } from './controllers/add-service-order-item.controller'
 import { RemoveServiceOrderItemController } from './controllers/remove-service-order-item.controller'
 import { FetchServiceOrderHistoryController } from './controllers/fetch-service-order-history.controller'
+import { GetOperationsMetricsController } from './controllers/get-operations-metrics.controller'
+import { GetRevenueMetricsController } from './controllers/get-revenue-metrics.controller'
 
 // Account Use Cases
 import { RegisterTenantUseCase } from '@/domain/account/application/use-cases/register-tenant'
@@ -73,6 +75,8 @@ import { AssignTechnicianUseCase } from '@/domain/service-order/application/use-
 import { AddServiceOrderItemUseCase } from '@/domain/service-order/application/use-cases/add-service-order-item'
 import { RemoveServiceOrderItemUseCase } from '@/domain/service-order/application/use-cases/remove-service-order-item'
 import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/application/use-cases/fetch-service-order-history'
+import { GetOperationsMetricsUseCase } from '@/domain/service-order/application/use-cases/get-operations-metrics'
+import { GetRevenueMetricsUseCase } from '@/domain/service-order/application/use-cases/get-revenue-metrics'
 
 @Module({
   imports: [
@@ -112,6 +116,9 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     AddServiceOrderItemController,
     RemoveServiceOrderItemController,
     FetchServiceOrderHistoryController,
+    // Metrics
+    GetOperationsMetricsController,
+    GetRevenueMetricsController,
   ],
   providers: [
     // Account Use Cases
@@ -145,6 +152,9 @@ import { FetchServiceOrderHistoryUseCase } from '@/domain/service-order/applicat
     AddServiceOrderItemUseCase,
     RemoveServiceOrderItemUseCase,
     FetchServiceOrderHistoryUseCase,
+    // Metrics Use Cases
+    GetOperationsMetricsUseCase,
+    GetRevenueMetricsUseCase,
   ],
 })
 export class HttpModule {}

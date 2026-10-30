@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** o frontend usa o A9 (F3.1) e segue para o F4. O A8 (editar a OS não aceitar `technicianId`) está anotado no roadmap do frontend; o A4 (métricas) entra no dashboard (F5). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o frontend usa o A4 no dashboard (F5). Seguem anotados no roadmap do frontend o A8 (editar a OS não aceitar `technicianId`), o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -70,6 +70,18 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - A3, pedido do frontend: `GET /users` lista a equipe da loja em ordem alfabética, com filtro `role` (por exemplo, só técnicos), sem paginação ([PR #18](https://github.com/rafaelkremser/fastos-api/pull/18)). Testado contra o banco real, inclusive com atendente vendo a lista e recebendo 403 ao tentar criar alguém.
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
 - A9, aviso ao cliente ([PR #19](https://github.com/rafaelkremser/fastos-api/pull/19)), detalhado abaixo.
+- A4, métricas para o dashboard ([PR #20](https://github.com/rafaelkremser/fastos-api/pull/20)), detalhado abaixo.
+
+**A4: métricas.** Feito.
+- **`GET /metrics/operations`,** para todos os papéis: OS por status (todos os status, os vazios com zero), em andamento (de "Aberta" a "Aguardando peças", `ACTIVE_STATUSES`), atrasadas (em andamento com a previsão antes de hoje), prontas para retirada e esperando aviso.
+- **`GET /metrics/revenue`,** só para dono e administrador:
+  - entregas e faturamento do mês, do dia 1 até agora;
+  - o mesmo trecho do mês anterior, para comparar: no dia 10, o mês passado conta até o dia 10, e um mês mais curto conta inteiro;
+  - os últimos 30 dias, um a um, os sem entrega com zero.
+- **Faturamento** é o total das OS entregues, contadas no dia da entrega, pela regra do total da OS: valor final, senão orçamento, senão a soma dos itens, menos o desconto. A conta roda no banco (`$queryRaw`, o primeiro SQL escrito à mão do projeto), e as datas são passadas em texto ISO e convertidas para UTC lá, sem depender do fuso da sessão.
+- **Dias e meses no fuso de Brasília** (`STORE_TIME_ZONE` em `src/core/time/time-zone.ts`), porque a loja não tem fuso próprio ainda.
+- **Índice dos itens por OS:** a tabela de itens não tinha índice em `service_order_id`, e o Postgres não cria um para chave estrangeira sozinho. Abrir uma OS lia a tabela inteira de itens; agora usa o índice, e as métricas também.
+- **Testado contra o banco real,** num branch temporário com entregas espalhadas em agosto, setembro e outubro, inclusive uma no dia 30/09 às 23h de Brasília (já 1º/10 em UTC). Os números bateram com a conta feita à mão: 4 entregas e R$ 929,90 no mês, 1 e R$ 250,00 no mesmo trecho de setembro, 2 atrasadas (a que vence hoje não conta), 3 esperando aviso. O técnico vê as operações e recebe 403 no faturamento.
 
 **A9: aviso ao cliente.** Feito.
 - **O aviso é separado do status.** A OS guarda quando a loja avisou o cliente (`customer_notified_at`), e qualquer mudança de status apaga essa data, porque o aviso valia para o status anterior.
@@ -188,6 +200,8 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 - **Gravações simultâneas na mesma OS:** cada gravação regrava a OS inteira com o que foi lido no começo do pedido. Se duas pessoas mexerem na mesma OS no mesmo instante (por exemplo, uma edita o diagnóstico enquanto a outra adiciona um item), a segunda gravação desfaz a mudança da primeira nos campos da OS. Os itens não se perdem, porque são gravados um a um. A solução é controlar a versão: a gravação só vale se a OS não mudou desde a leitura, e senão responde 409.
 - **Loja inativa hoje quer dizer "aguardando aprovação".** Quando houver suspensão por falta de pagamento (S-4), o login e o frontend vão precisar distinguir os dois casos, com um status no lugar do `isActive`.
 - **Cliente com OS não pode ser excluído,** nem por pedido do próprio cliente (LGPD). A saída é anonimizar os dados pessoais e manter a OS, junto com a exclusão lógica do P3-3.
+- **Fuso único:** dias e meses das métricas seguem o horário de Brasília. Uma loja em outro fuso (Acre, Amazonas, Fernando de Noronha) vê o virar do dia uma ou duas horas fora; resolver pede um fuso por loja.
+- **Faturamento não é recebimento:** a API não registra pagamentos, então o faturamento é o total das OS entregues. Uma OS paga antes da entrega, ou entregue sem pagar, aparece no dia da entrega.
 - **Editar um cliente não confere telefone repetido:** só o cadastro verifica, e o banco não tem restrição de unicidade (só um índice), então a edição aceita o telefone de outro cliente da loja.
 - **Ninguém é avisado de um cadastro novo:** a fila só aparece com `npm run tenants:inactive`. As notificações (P3-4) resolvem.
 - **Os tokens ficam no frontend,** porque vêm no corpo da resposta: um script malicioso injetado no site (XSS) conseguiria lê-los. Guardar o de renovação num cookie que o JavaScript não lê é a alternativa, quando houver frontend.
@@ -251,6 +265,10 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-28 | Todos os papéis veem a equipe da loja; a lista vem inteira, sem paginação | A lista de OS filtra por técnico para qualquer papel, e a equipe de uma loja cabe numa resposta | Só dono e administrador; lista paginada |
 | 2026-10-28 | Aviso ao cliente registrado à parte, e não como status novo | O status diz em que etapa o conserto está; o aviso diz se a loja falou com o cliente. Como status, cada etapa que pede aviso dobraria (avisar e avisado) | Status "pronta, avisar cliente" e "pronta, cliente avisado" |
 | 2026-10-28 | Mudar o status apaga o aviso | O aviso era sobre o status anterior; o novo precisa do seu | Manter a data do último aviso de qualquer status |
+| 2026-10-30 | Faturamento é o total das OS entregues, no dia da entrega | A API não registra pagamentos; a entrega é quando o cliente costuma pagar | Contar quando a OS fica pronta; registrar pagamentos antes do dashboard |
+| 2026-10-30 | O mês corrente é comparado com o mesmo trecho do mês anterior | Comparar o começo do mês com um mês inteiro sempre parece queda | Mês anterior inteiro, como no `pizza-shop` |
+| 2026-10-30 | Duas rotas de métricas, separadas por papel | O faturamento é só de dono e administrador; a operação é de todos. Cada rota tem um `@Roles` só | Uma rota que esconde campos conforme o papel |
+| 2026-10-30 | Fuso fixo de Brasília para dias e meses | Toda loja é do Brasil por enquanto, e o país não tem horário de verão desde 2019 | Fuso por loja, que exige campo novo e tela |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 
@@ -266,5 +284,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | OS: atribuir técnico | ✓ | ✓ | | |
 | Ver a equipe da loja (lista de usuários) | ✓ | ✓ | ✓ | ✓ |
 | Criar usuários | ✓ | ✓ (só técnico e atendente) | | |
+| Ver os números da operação (OS por status, atrasadas, avisos) | ✓ | ✓ | ✓ | ✓ |
+| Ver o faturamento | ✓ | ✓ | | |
 
 Ninguém cria um segundo dono.
