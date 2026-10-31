@@ -3,7 +3,7 @@ import { PrismaService } from './prisma.service'
 
 // No query runs here, so no database is needed: the pool only connects on use
 const env = {
-  get: () => 'postgresql://user:password@localhost:5432/fastos',
+  get: () => 'postgresql://user:password@localhost:5432/consertiva',
 } as unknown as EnvService
 
 describe('PrismaService', () => {

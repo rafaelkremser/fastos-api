@@ -32,7 +32,7 @@ Content-Type: application/json
 }
 
 ### 2. Login (autenticar usuário)
-# tenantSlug é o subdomínio da assistência (assistencia-tech.fastos.com)
+# tenantSlug é o subdomínio da assistência (assistencia-tech.consertiva.com.br)
 # Devolve access_token (vale 15 min) e refresh_token (vale 7 dias).
 # Quando o access_token vencer, rode este login de novo ou a renovação (2.3).
 # @name login

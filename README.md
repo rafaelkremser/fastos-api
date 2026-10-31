@@ -1,4 +1,4 @@
-# FastOS API
+# Consertiva API
 
 SaaS Multi-Tenant para Gestão de Ordens de Serviço voltado para assistências técnicas.
 
@@ -40,7 +40,7 @@ Copie a saída (duas linhas `JWT_PRIVATE_KEY=...` e `JWT_PUBLIC_KEY=...`) e cole
 Certifique-se de que o PostgreSQL está instalado e rodando. Crie o banco de dados:
 
 ```sql
-CREATE DATABASE fastos_db;
+CREATE DATABASE consertiva_db;
 ```
 
 ### 4. Executar migrations do Prisma

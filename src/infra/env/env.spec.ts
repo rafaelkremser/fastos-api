@@ -1,7 +1,7 @@
 import { envSchema } from './env'
 
 const requiredEnv = {
-  DATABASE_URL: 'postgresql://user:password@localhost:5432/fastos',
+  DATABASE_URL: 'postgresql://user:password@localhost:5432/consertiva',
   JWT_PRIVATE_KEY: 'private-key',
   JWT_PUBLIC_KEY: 'public-key',
 }
@@ -18,19 +18,19 @@ describe('Environment variables', () => {
   it('should read a comma-separated list of CORS origins', () => {
     const env = envSchema.parse({
       ...requiredEnv,
-      CORS_ORIGINS: ' http://localhost:5173 ,https://*.fastos.com,, ',
+      CORS_ORIGINS: ' http://localhost:5173 ,https://*.consertiva.com.br,, ',
     })
 
     expect(env.CORS_ORIGINS).toEqual([
       'http://localhost:5173',
-      'https://*.fastos.com',
+      'https://*.consertiva.com.br',
     ])
   })
 
   it.each([
-    ['a trailing slash', 'https://app.fastos.com/'],
-    ['a path', 'https://app.fastos.com/login'],
-    ['no scheme', 'app.fastos.com'],
+    ['a trailing slash', 'https://app.consertiva.com.br/'],
+    ['a path', 'https://app.consertiva.com.br/login'],
+    ['no scheme', 'app.consertiva.com.br'],
     ['a bare wildcard', '*'],
     ['a wildcard with no domain', 'https://*'],
     ['a wildcard in the middle', 'https://loja.*.com'],

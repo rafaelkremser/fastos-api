@@ -14,7 +14,7 @@ class ProbeController {
 }
 
 const defaults = {
-  corsOrigins: ['http://localhost:5173', 'https://*.fastos.com'],
+  corsOrigins: ['http://localhost:5173', 'https://*.consertiva.com.br'],
   trustProxyHops: 0,
   swaggerEnabled: false,
 }
@@ -48,7 +48,7 @@ describe('HTTP configuration', () => {
     expect(response.headers['x-powered-by']).toBeUndefined()
   })
 
-  it.each(['http://localhost:5173', 'https://loja-a.fastos.com'])(
+  it.each(['http://localhost:5173', 'https://loja-a.consertiva.com.br'])(
     'should allow the browser origin %s',
     async (origin) => {
       app = await createApp()
@@ -62,7 +62,7 @@ describe('HTTP configuration', () => {
     },
   )
 
-  it.each(['https://evil.com', 'https://a.b.fastos.com'])(
+  it.each(['https://evil.com', 'https://a.b.consertiva.com.br'])(
     'should not allow the browser origin %s',
     async (origin) => {
       app = await createApp()
@@ -80,13 +80,13 @@ describe('HTTP configuration', () => {
 
     const response = await request(app.getHttpServer())
       .options('/probe')
-      .set('Origin', 'https://loja-a.fastos.com')
+      .set('Origin', 'https://loja-a.consertiva.com.br')
       .set('Access-Control-Request-Method', 'POST')
       .set('Access-Control-Request-Headers', 'authorization,content-type')
 
     expect(response.status).toBe(204)
     expect(response.headers['access-control-allow-origin']).toBe(
-      'https://loja-a.fastos.com',
+      'https://loja-a.consertiva.com.br',
     )
     expect(response.headers['access-control-allow-headers']).toContain(
       'authorization',
