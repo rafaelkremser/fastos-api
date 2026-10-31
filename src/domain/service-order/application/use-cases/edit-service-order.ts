@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
-import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 import { ServiceOrder, OrderPriority } from '../../enterprise/entities/service-order'
 import { ServiceOrdersRepository } from '../repositories/service-orders-repository'
 
+// The technician is not here: AssignTechnicianUseCase changes it, checking the
+// role and the store and recording it in the history
 interface EditServiceOrderUseCaseRequest {
   tenantId: string
   serviceOrderId: string
@@ -13,7 +14,6 @@ interface EditServiceOrderUseCaseRequest {
   diagnosis?: string | null
   solution?: string | null
   priority?: OrderPriority
-  technicianId?: string | null
   estimatedDate?: Date | null
   estimatedCost?: number | null
   finalCost?: number | null
@@ -38,7 +38,6 @@ export class EditServiceOrderUseCase {
     diagnosis,
     solution,
     priority,
-    technicianId,
     estimatedDate,
     estimatedCost,
     finalCost,
@@ -71,12 +70,6 @@ export class EditServiceOrderUseCase {
 
     if (priority !== undefined) {
       serviceOrder.priority = priority
-    }
-
-    if (technicianId !== undefined) {
-      serviceOrder.technicianId = technicianId
-        ? new UniqueEntityID(technicianId)
-        : null
     }
 
     if (estimatedDate !== undefined) {

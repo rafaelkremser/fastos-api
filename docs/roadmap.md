@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** o frontend usa o A4 no dashboard (F5). Seguem anotados no roadmap do frontend o A8 (editar a OS não aceitar `technicianId`), o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o P2-5 (testes de ponta a ponta contra o banco, com o isolamento entre lojas) e o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que começa quando a hospedagem for contratada. Seguem anotados no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -71,6 +71,11 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
 - A9, aviso ao cliente ([PR #19](https://github.com/rafaelkremser/fastos-api/pull/19)), detalhado abaixo.
 - A4, métricas para o dashboard ([PR #20](https://github.com/rafaelkremser/fastos-api/pull/20)), e A13, por técnico e por etapa ([PR #21](https://github.com/rafaelkremser/fastos-api/pull/21)), detalhados abaixo.
+- A8, pedido do frontend: editar a OS não muda mais o técnico ([PR #23](https://github.com/rafaelkremser/fastos-api/pull/23)).
+  - **O problema:** o técnico pode editar a OS, e a edição aceitava `technicianId`. Assim ele conseguia se atribuir a uma OS sem passar pela rota de atribuição, que é só de dono e administrador, e sem nada no histórico. A edição nem conferia se o técnico era da mesma loja.
+  - **A correção:** o campo saiu da validação e do caso de uso da edição, e um `technicianId` enviado é descartado. O técnico só muda pela rota de atribuição, que confere a loja e grava no histórico.
+  - **Testes:** o caso de uso da edição ganhou testes (mantém o técnico, recusa OS de outra loja, avisa quando a OS não existe). Um teste da rota confere que o `technicianId` do corpo não chega ao caso de uso; com o campo de volta na validação, ele falha.
+  - **Efeito colateral:** tirar o técnico de uma OS deixou de ser possível. O frontend não oferece isso; se precisar, a rota de atribuição passa a aceitar "nenhum", com registro no histórico.
 
 **A4 e A13: métricas.** Feito.
 - **`GET /metrics/operations`,** para todos os papéis: OS por status (todos os status, os vazios com zero), em andamento (de "Aberta" a "Aguardando peças", `ACTIVE_STATUSES`), atrasadas (em andamento com a previsão antes de hoje), prontas para retirada e esperando aviso.
