@@ -71,7 +71,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
 - A9, aviso ao cliente ([PR #19](https://github.com/rafaelkremser/fastos-api/pull/19)), detalhado abaixo.
 - A4, métricas para o dashboard ([PR #20](https://github.com/rafaelkremser/fastos-api/pull/20)), e A13, por técnico e por etapa ([PR #21](https://github.com/rafaelkremser/fastos-api/pull/21)), detalhados abaixo.
-- A8, pedido do frontend: editar a OS não muda mais o técnico ([PR #23](https://github.com/rafaelkremser/fastos-api/pull/23)).
+- A8, pedido do frontend: editar a OS não muda mais o técnico ([PR #22](https://github.com/rafaelkremser/fastos-api/pull/22)).
   - **O problema:** o técnico pode editar a OS, e a edição aceitava `technicianId`. Assim ele conseguia se atribuir a uma OS sem passar pela rota de atribuição, que é só de dono e administrador, e sem nada no histórico. A edição nem conferia se o técnico era da mesma loja.
   - **A correção:** o campo saiu da validação e do caso de uso da edição, e um `technicianId` enviado é descartado. O técnico só muda pela rota de atribuição, que confere a loja e grava no histórico.
   - **Testes:** o caso de uso da edição ganhou testes (mantém o técnico, recusa OS de outra loja, avisa quando a OS não existe). Um teste da rota confere que o `technicianId` do corpo não chega ao caso de uso; com o campo de volta na validação, ele falha.
@@ -148,7 +148,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | # | Item | Status |
 |---|---|---|
-| P2-1 | Definir a hospedagem da API | Feito: Fly.io em São Paulo, com os arquivos do deploy no [PR #24](https://github.com/rafaelkremser/fastos-api/pull/24) |
+| P2-1 | Definir a hospedagem da API | Feito: Fly.io em São Paulo, com os arquivos do deploy no [PR #22](https://github.com/rafaelkremser/fastos-api/pull/22) |
 | P2-2 | Logs estruturados (Pino), com um ID por requisição | Pendente |
 | P2-3 | `GET /health` para o host monitorar a API | Pendente |
 | P2-4 | Monitoramento de erros (Sentry) | Pendente |
@@ -224,7 +224,7 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 
 ## Checklist do primeiro deploy
 
-Desde o [PR #24](https://github.com/rafaelkremser/fastos-api/pull/24) estão prontos:
+Desde o [PR #22](https://github.com/rafaelkremser/fastos-api/pull/22) estão prontos:
 - os arquivos (`Dockerfile`, `.dockerignore`, `fly.toml`, `scripts/fly-secrets.mjs`);
 - o passo a passo, em [`docs/deploy.md`](deploy.md);
 - o ensaio, em 2026-10-31, contra uma cópia do `production`: as migrations que faltavam aplicaram, a API subiu só com as dependências de produção, o CORS recusou um site de fora, a loja nova nasceu pendente, o Swagger ficou desligado e os comandos de aprovação funcionaram.
