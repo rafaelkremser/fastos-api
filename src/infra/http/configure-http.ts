@@ -32,7 +32,7 @@ export function configureHttp(
 
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
-      .setTitle('FastOS API')
+      .setTitle('Consertiva API')
       .setDescription('SaaS multi-tenant para gestão de ordens de serviço')
       .setVersion('1.0')
       .addBearerAuth()

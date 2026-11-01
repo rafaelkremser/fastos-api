@@ -1,4 +1,4 @@
-# FastOS API
+# Consertiva API
 
 SaaS Multi-Tenant para Gestão de Ordens de Serviço voltado para assistências técnicas.
 
@@ -40,7 +40,7 @@ Copie a saída (duas linhas `JWT_PRIVATE_KEY=...` e `JWT_PUBLIC_KEY=...`) e cole
 Certifique-se de que o PostgreSQL está instalado e rodando. Crie o banco de dados:
 
 ```sql
-CREATE DATABASE fastos_db;
+CREATE DATABASE consertiva_db;
 ```
 
 ### 4. Executar migrations do Prisma
@@ -74,6 +74,10 @@ Para visualizar e gerenciar os dados do banco:
 ```bash
 npm run prisma:studio
 ```
+
+### Produção
+
+A API roda no Fly.io, em São Paulo, a partir do `Dockerfile` e do `fly.toml`. O passo a passo do deploy, dos segredos e da liberação de lojas está em [`docs/deploy.md`](docs/deploy.md).
 
 ## Estrutura dos Módulos
 

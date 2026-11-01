@@ -19,12 +19,13 @@ import { ResourceNotFoundError } from '@/core/errors/resource-not-found-error'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
 import { ServiceOrderPresenter } from '../presenters/service-order-presenter'
 
+// Fields not listed are dropped, technicianId among them: a technician can
+// edit, but only the owner and admins assign, through PATCH .../technician
 const editServiceOrderBodySchema = z.object({
   problemDescription: z.string().min(10).optional(),
   diagnosis: z.string().optional().nullable(),
   solution: z.string().optional().nullable(),
   priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'URGENT']).optional(),
-  technicianId: z.string().uuid().optional().nullable(),
   estimatedDate: z.coerce.date().optional().nullable(),
   estimatedCost: z.number().optional().nullable(),
   finalCost: z.number().optional().nullable(),

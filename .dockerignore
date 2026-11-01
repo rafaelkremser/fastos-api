@@ -1,0 +1,13 @@
+# Only what the build needs goes to Fly's builder; above all, no .env
+node_modules
+dist
+coverage
+test
+docs
+.git
+.github
+.claude
+.neon
+.env
+.env.*
+*.log

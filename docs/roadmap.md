@@ -1,8 +1,8 @@
-# Roadmap da FastOS API
+# Roadmap da Consertiva API
 
 Plano para levar a API até a produção. É a referência única do que já foi feito, do que vem a seguir e por quê.
 
-**Última atualização:** 2026-10-27
+**Última atualização:** 2026-10-31
 
 ## Como usar este documento
 
@@ -20,11 +20,11 @@ Plano para levar a API até a produção. É a referência única do que já foi
 |---|:-:|:-:|
 | P0: bloqueadores de deploy | 8 | 8 |
 | P1: quebra ou vaza em produção | 4 | 4 |
-| P2: operação | 0 | 7 |
+| P2: operação | 1 | 7 |
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** o frontend usa o A4 no dashboard (F5). Seguem anotados no roadmap do frontend o A8 (editar a OS não aceitar `technicianId`), o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API (A1 a A5) ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o P2-5 (testes de ponta a ponta contra o banco, com o isolamento entre lojas) e o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que começa quando a hospedagem for contratada. Seguem anotados no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -40,7 +40,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P0-8 | Dependências vulneráveis | Feito | `ded7842` |
 
 **P0-5: `helmet`, CORS configurável e Swagger fora de produção.** Feito.
-- **CORS:** as origens vêm de `CORS_ORIGINS`. Como cada loja tem o seu subdomínio, a variável aceita `https://*.fastos.com`, que libera exatamente um nível de subdomínio. Vazia, nenhum site consegue chamar a API pelo navegador.
+- **CORS:** as origens vêm de `CORS_ORIGINS`. Como cada loja tem o seu subdomínio, a variável aceita `https://*.consertiva.com.br`, que libera exatamente um nível de subdomínio. Vazia, nenhum site consegue chamar a API pelo navegador.
 - **Cabeçalhos de segurança:** o `helmet` acrescenta os cabeçalhos HTTP de segurança e esconde que a API usa Express.
 - **Swagger:** só sobe com `SWAGGER_ENABLED=true`. Sem a variável, fica desligado, que é o caso de produção.
 - **Testes:** a configuração HTTP fica em `src/infra/http/configure-http.ts`, testada sem subir a API inteira. Isso também cobre o `TRUST_PROXY_HOPS` do P0-4.
@@ -71,6 +71,11 @@ Plano para levar a API até a produção. É a referência única do que já foi
 - Loja de demonstração para testes manuais: `npm run seed:dev`, com a API rodando, cria a loja `oficina-demo` com dono, técnico e atendente, 24 clientes, 14 aparelhos e 12 OS em todos os status, passando pela própria API. Numa API com aprovação, a loja fica pendente até `npm run tenants:activate -- oficina-demo`; rodar de novo numa loja com dados não muda nada. Os logins ficam no começo de `scripts/seed-dev.mjs`.
 - A9, aviso ao cliente ([PR #19](https://github.com/rafaelkremser/fastos-api/pull/19)), detalhado abaixo.
 - A4, métricas para o dashboard ([PR #20](https://github.com/rafaelkremser/fastos-api/pull/20)), e A13, por técnico e por etapa ([PR #21](https://github.com/rafaelkremser/fastos-api/pull/21)), detalhados abaixo.
+- A8, pedido do frontend: editar a OS não muda mais o técnico ([PR #23](https://github.com/rafaelkremser/fastos-api/pull/23)).
+  - **O problema:** o técnico pode editar a OS, e a edição aceitava `technicianId`. Assim ele conseguia se atribuir a uma OS sem passar pela rota de atribuição, que é só de dono e administrador, e sem nada no histórico. A edição nem conferia se o técnico era da mesma loja.
+  - **A correção:** o campo saiu da validação e do caso de uso da edição, e um `technicianId` enviado é descartado. O técnico só muda pela rota de atribuição, que confere a loja e grava no histórico.
+  - **Testes:** o caso de uso da edição ganhou testes (mantém o técnico, recusa OS de outra loja, avisa quando a OS não existe). Um teste da rota confere que o `technicianId` do corpo não chega ao caso de uso; com o campo de volta na validação, ele falha.
+  - **Efeito colateral:** tirar o técnico de uma OS deixou de ser possível. O frontend não oferece isso; se precisar, a rota de atribuição passa a aceitar "nenhum", com registro no histórico.
 
 **A4 e A13: métricas.** Feito.
 - **`GET /metrics/operations`,** para todos os papéis: OS por status (todos os status, os vazios com zero), em andamento (de "Aberta" a "Aguardando peças", `ACTIVE_STATUSES`), atrasadas (em andamento com a previsão antes de hoje), prontas para retirada e esperando aviso.
@@ -95,7 +100,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 **Cadastro com aprovação.** Feito.
 - **A loja nova nasce inativa.** O cadastro continua público, mas ninguém entra até a loja ser liberada. Com `TENANT_AUTO_APPROVAL=true`, volta a nascer liberada, para quando houver cobrança (ver "Assinatura").
 - **Login de loja pendente:** com a senha certa, a API responde 403 ("Tenant is not active."), e o frontend explica que a loja aguarda aprovação. Com a senha errada, a resposta continua 401, então só quem já provou ser usuário da loja descobre que ela está pendente.
-- **Comandos para o dono do FastOS** (depois do `npm run build`, contra o banco do `DATABASE_URL`):
+- **Comandos para o dono da Consertiva** (depois do `npm run build`, contra o banco do `DATABASE_URL`):
   - `npm run tenants:inactive` lista as lojas aguardando aprovação, da mais antiga para a mais nova;
   - `npm run tenants:activate -- <endereço>` libera a loja.
 - **Testado** num branch temporário do Neon, junto com o frontend: cadastro pendente, 401 com a senha errada, 403 com a certa, listagem, liberação e login depois de liberada.
@@ -143,7 +148,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | # | Item | Status |
 |---|---|---|
-| P2-1 | Definir a hospedagem da API | Adiado para o primeiro deploy (ver "Decisões") |
+| P2-1 | Definir a hospedagem da API | Feito: Fly.io em São Paulo, com os arquivos do deploy no [PR #24](https://github.com/rafaelkremser/fastos-api/pull/24) |
 | P2-2 | Logs estruturados (Pino), com um ID por requisição | Pendente |
 | P2-3 | `GET /health` para o host monitorar a API | Pendente |
 | P2-4 | Monitoramento de erros (Sentry) | Pendente |
@@ -167,7 +172,7 @@ Hoje os primeiros clientes entram por contrato, com a loja liberada à mão. Est
 
 | # | Item | Status |
 |---|---|---|
-| S-1 | Termos de uso e política de privacidade, aceitos no cadastro. O FastOS trata os dados dos clientes de cada loja por conta dela (LGPD) | Pendente |
+| S-1 | Termos de uso e política de privacidade, aceitos no cadastro. A Consertiva trata os dados dos clientes de cada loja por conta dela (LGPD) | Pendente |
 | S-2 | Confirmação de e-mail no cadastro | Pendente |
 | S-3 | Planos e limites aplicados na API: usuários, OS por mês, recursos | Pendente |
 | S-4 | Cobrança recorrente: o pagamento libera a loja, e a falta dele a suspende | Pendente |
@@ -219,16 +224,23 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 
 ## Checklist do primeiro deploy
 
-- [ ] Hospedagem escolhida (P2-1), na mesma região do banco (São Paulo). Recomendação: Fly.io em São Paulo para a API e Cloudflare para o frontend e o DNS.
-- [ ] Par de chaves JWT novo, só para produção, guardado nos segredos do host (nunca o de desenvolvimento).
-- [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon.
-- [ ] Sequência do deploy: `npm ci` e `npm run build` (o build precisa das dependências de desenvolvimento); na execução, basta `npm ci --omit=dev` e `npm run start:prod`, que aplica as migrations antes de subir. Se o host tiver etapa de release, rodar `npm run prisma:deploy` nela e `node dist/main` como comando de início.
-- [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
-- [ ] `CORS_ORIGINS` com as origens do frontend, por exemplo `https://*.fastos.com`. Se ficar vazia, o frontend não consegue chamar a API.
+Desde o [PR #24](https://github.com/rafaelkremser/fastos-api/pull/24) estão prontos:
+- os arquivos (`Dockerfile`, `.dockerignore`, `fly.toml`, `scripts/fly-secrets.mjs`);
+- o passo a passo, em [`docs/deploy.md`](deploy.md);
+- o ensaio, em 2026-10-31, contra uma cópia do `production`: as migrations que faltavam aplicaram, a API subiu só com as dependências de produção, o CORS recusou um site de fora, a loja nova nasceu pendente, o Swagger ficou desligado e os comandos de aprovação funcionaram.
+
+Cada item abaixo é marcado quando o deploy acontecer.
+
+- [x] Hospedagem escolhida (P2-1), na mesma região do banco: Fly.io em São Paulo (`gru`) para a API, Cloudflare para o frontend e o DNS.
+- [ ] Par de chaves JWT novo, só para produção, guardado nos segredos do host (nunca o de desenvolvimento): `npm run fly:secrets`.
+- [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon: também pelo `npm run fly:secrets`.
+- [ ] Sequência do deploy: o `Dockerfile` faz `npm ci`, `npm run build` e `npm prune --omit=dev`. O `release_command` do `fly.toml` roda `prisma migrate deploy` antes de cada versão nova, e o comando de início é `node dist/main`.
+- [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API: 1 no `fly.toml` (o proxy do Fly), porque o `api` fica sem o proxy do Cloudflare. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
+- [ ] `CORS_ORIGINS` com as origens do frontend: `https://consertiva.com.br,https://*.consertiva.com.br`, no `fly.toml`. Se ficar vazia, o frontend não consegue chamar a API.
 - [ ] `SWAGGER_ENABLED` não definida (ou `false`), para o `/api/docs` ficar desligado.
 - [ ] `TENANT_AUTO_APPROVAL` não definida (ou `false`), para as lojas novas aguardarem aprovação.
-- [ ] Um jeito de rodar `npm run tenants:inactive` e `tenants:activate` contra o banco de produção: no servidor, ou localmente com as URLs do `production` só em variáveis de ambiente.
-- [ ] DNS curinga `*.fastos.com` apontando para o frontend.
+- [ ] Um jeito de rodar os comandos de aprovação contra o banco de produção: `fly ssh console -C "node /app/dist/infra/cli/tenants inactive"` (ou `activate <endereço>`).
+- [ ] DNS no Cloudflare: curinga `*.consertiva.com.br` com proxy, para o frontend, e `api` sem proxy, para o Fly.
 - [ ] Branch `dev` no git, pareada com o branch `dev` do Neon.
 
 ## Decisões
@@ -276,6 +288,10 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-30 | Fuso fixo de Brasília para dias e meses | Toda loja é do Brasil por enquanto, e o país não tem horário de verão desde 2019 | Fuso por loja, que exige campo novo e tela |
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
+| 2026-10-31 | O produto passa a se chamar Consertiva, no domínio `consertiva.com.br` (as lojas em `loja.consertiva.com.br`) | O `fastos.com.br` tem dono, e o domínio aparece no endereço de toda loja. Os motivos e os nomes descartados estão no roadmap do frontend. As decisões anteriores citam `fastos.com` como exemplo; as pastas e os repositórios continuam `fastos-api` e `fastos-web` | Manter FastOS com um domínio alternativo |
+| 2026-10-31 | API no Fly.io (`gru`), uma máquina de 512 MB que para sozinha sem uso, com as migrations no `release_command` | Custa poucos dólares por mês sem clientes; se uma migration falhar, a versão em uso continua no ar. A máquina passa a ficar sempre ligada quando as lojas usarem todo dia | Migrations no `start:prod` (cada máquina tentaria aplicar ao subir); máquina sempre ligada desde já |
+| 2026-10-31 | `api.consertiva.com.br` sem o proxy do Cloudflare | O Fly emite o certificado e já é o proxy na frente da API; com os dois, o `TRUST_PROXY_HOPS` e o limite de tentativas ficariam mais frágeis | Passar a API pelo Cloudflare também |
+| 2026-10-31 | Segredos de produção enviados por script (`npm run fly:secrets`), que gera as chaves JWT e lê as URLs do Neon | Nenhum valor aparece na tela, no histórico do terminal ou na conversa | Copiar as URLs do painel do Neon e colar no `fly secrets set` |
 
 ### Matriz de papéis
 

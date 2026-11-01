@@ -3,14 +3,14 @@ import { createOriginMatcher } from './cors'
 describe('CORS origin matcher', () => {
   const isAllowed = createOriginMatcher([
     'http://localhost:5173',
-    'https://*.fastos.com',
+    'https://*.consertiva.com.br',
   ])
 
   it.each([
     'http://localhost:5173',
-    'https://loja-a.fastos.com',
-    'https://assistencia-tech.fastos.com',
-    'HTTPS://Loja-A.FastOS.com',
+    'https://loja-a.consertiva.com.br',
+    'https://assistencia-tech.consertiva.com.br',
+    'HTTPS://Loja-A.Consertiva.COM.BR',
   ])('should allow %s', (origin) => {
     expect(isAllowed(origin)).toBe(true)
   })
@@ -18,12 +18,12 @@ describe('CORS origin matcher', () => {
   it.each([
     ['another port', 'http://localhost:3000'],
     ['another site', 'https://evil.com'],
-    ['the bare domain (not a subdomain)', 'https://fastos.com'],
-    ['two subdomain levels', 'https://a.b.fastos.com'],
-    ['a lookalike domain', 'https://evilfastos.com'],
-    ['the domain as a prefix', 'https://loja.fastos.com.evil.com'],
-    ['plain http on the wildcard', 'http://loja.fastos.com'],
-    ['a port on the wildcard', 'https://loja.fastos.com:8443'],
+    ['the bare domain (not a subdomain)', 'https://consertiva.com.br'],
+    ['two subdomain levels', 'https://a.b.consertiva.com.br'],
+    ['a lookalike domain', 'https://evilconsertiva.com.br'],
+    ['the domain as a prefix', 'https://loja.consertiva.com.br.evil.com'],
+    ['plain http on the wildcard', 'http://loja.consertiva.com.br'],
+    ['a port on the wildcard', 'https://loja.consertiva.com.br:8443'],
   ])('should block %s (%s)', (_, origin) => {
     expect(isAllowed(origin)).toBe(false)
   })
@@ -33,8 +33,8 @@ describe('CORS origin matcher', () => {
   })
 
   it('should treat dots in the configured host literally', () => {
-    const matcher = createOriginMatcher(['https://*.fastos.com'])
+    const matcher = createOriginMatcher(['https://*.consertiva.com.br'])
 
-    expect(matcher('https://loja.fastosXcom')).toBe(false)
+    expect(matcher('https://loja.consertivaXcom.br')).toBe(false)
   })
 })
