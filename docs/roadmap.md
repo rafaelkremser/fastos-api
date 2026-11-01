@@ -20,7 +20,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 |---|:-:|:-:|
 | P0: bloqueadores de deploy | 8 | 8 |
 | P1: quebra ou vaza em produção | 4 | 4 |
-| P2: operação | 0 | 7 |
+| P2: operação | 1 | 7 |
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
@@ -148,7 +148,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 
 | # | Item | Status |
 |---|---|---|
-| P2-1 | Definir a hospedagem da API | Adiado para o primeiro deploy (ver "Decisões") |
+| P2-1 | Definir a hospedagem da API | Feito: Fly.io em São Paulo, com os arquivos do deploy no [PR #24](https://github.com/rafaelkremser/fastos-api/pull/24) |
 | P2-2 | Logs estruturados (Pino), com um ID por requisição | Pendente |
 | P2-3 | `GET /health` para o host monitorar a API | Pendente |
 | P2-4 | Monitoramento de erros (Sentry) | Pendente |
@@ -224,16 +224,23 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 
 ## Checklist do primeiro deploy
 
-- [ ] Hospedagem escolhida (P2-1), na mesma região do banco (São Paulo). Recomendação: Fly.io em São Paulo para a API e Cloudflare para o frontend e o DNS.
-- [ ] Par de chaves JWT novo, só para produção, guardado nos segredos do host (nunca o de desenvolvimento).
-- [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon.
-- [ ] Sequência do deploy: `npm ci` e `npm run build` (o build precisa das dependências de desenvolvimento); na execução, basta `npm ci --omit=dev` e `npm run start:prod`, que aplica as migrations antes de subir. Se o host tiver etapa de release, rodar `npm run prisma:deploy` nela e `node dist/main` como comando de início.
-- [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
-- [ ] `CORS_ORIGINS` com as origens do frontend: `https://consertiva.com.br,https://*.consertiva.com.br`. Se ficar vazia, o frontend não consegue chamar a API.
+Desde o [PR #24](https://github.com/rafaelkremser/fastos-api/pull/24) estão prontos:
+- os arquivos (`Dockerfile`, `.dockerignore`, `fly.toml`, `scripts/fly-secrets.mjs`);
+- o passo a passo, em [`docs/deploy.md`](deploy.md);
+- o ensaio, em 2026-10-31, contra uma cópia do `production`: as migrations que faltavam aplicaram, a API subiu só com as dependências de produção, o CORS recusou um site de fora, a loja nova nasceu pendente, o Swagger ficou desligado e os comandos de aprovação funcionaram.
+
+Cada item abaixo é marcado quando o deploy acontecer.
+
+- [x] Hospedagem escolhida (P2-1), na mesma região do banco: Fly.io em São Paulo (`gru`) para a API, Cloudflare para o frontend e o DNS.
+- [ ] Par de chaves JWT novo, só para produção, guardado nos segredos do host (nunca o de desenvolvimento): `npm run fly:secrets`.
+- [ ] `DATABASE_URL` e `DATABASE_URL_UNPOOLED` do branch `production` do Neon: também pelo `npm run fly:secrets`.
+- [ ] Sequência do deploy: o `Dockerfile` faz `npm ci`, `npm run build` e `npm prune --omit=dev`. O `release_command` do `fly.toml` roda `prisma migrate deploy` antes de cada versão nova, e o comando de início é `node dist/main`.
+- [ ] `TRUST_PROXY_HOPS` igual ao número exato de proxies na frente da API: 1 no `fly.toml` (o proxy do Fly), porque o `api` fica sem o proxy do Cloudflare. Com 0 atrás de um proxy, todos os clientes dividem um único limite de tentativas; com um número maior, o cliente consegue falsificar o IP.
+- [ ] `CORS_ORIGINS` com as origens do frontend: `https://consertiva.com.br,https://*.consertiva.com.br`, no `fly.toml`. Se ficar vazia, o frontend não consegue chamar a API.
 - [ ] `SWAGGER_ENABLED` não definida (ou `false`), para o `/api/docs` ficar desligado.
 - [ ] `TENANT_AUTO_APPROVAL` não definida (ou `false`), para as lojas novas aguardarem aprovação.
-- [ ] Um jeito de rodar `npm run tenants:inactive` e `tenants:activate` contra o banco de produção: no servidor, ou localmente com as URLs do `production` só em variáveis de ambiente.
-- [ ] DNS curinga `*.consertiva.com.br` apontando para o frontend.
+- [ ] Um jeito de rodar os comandos de aprovação contra o banco de produção: `fly ssh console -C "node /app/dist/infra/cli/tenants inactive"` (ou `activate <endereço>`).
+- [ ] DNS no Cloudflare: curinga `*.consertiva.com.br` com proxy, para o frontend, e `api` sem proxy, para o Fly.
 - [ ] Branch `dev` no git, pareada com o branch `dev` do Neon.
 
 ## Decisões
@@ -282,6 +289,9 @@ Limitações aceitas de propósito, para resolver quando fizer sentido:
 | 2026-10-20 | O login sempre verifica uma senha, mesmo sem usuário | Com o bcrypt mais lento, o tempo de resposta revelaria quais e-mails têm conta | Responder na hora quando o e-mail não existe |
 | 2026-10-20 | CORS por lista de origens, com curinga de um nível de subdomínio; lista vazia bloqueia tudo | Cada loja chama a API do próprio subdomínio; esquecer a variável deixa a API fechada, não aberta | Liberar qualquer origem |
 | 2026-10-31 | O produto passa a se chamar Consertiva, no domínio `consertiva.com.br` (as lojas em `loja.consertiva.com.br`) | O `fastos.com.br` tem dono, e o domínio aparece no endereço de toda loja. Os motivos e os nomes descartados estão no roadmap do frontend. As decisões anteriores citam `fastos.com` como exemplo; as pastas e os repositórios continuam `fastos-api` e `fastos-web` | Manter FastOS com um domínio alternativo |
+| 2026-10-31 | API no Fly.io (`gru`), uma máquina de 512 MB que para sozinha sem uso, com as migrations no `release_command` | Custa poucos dólares por mês sem clientes; se uma migration falhar, a versão em uso continua no ar. A máquina passa a ficar sempre ligada quando as lojas usarem todo dia | Migrations no `start:prod` (cada máquina tentaria aplicar ao subir); máquina sempre ligada desde já |
+| 2026-10-31 | `api.consertiva.com.br` sem o proxy do Cloudflare | O Fly emite o certificado e já é o proxy na frente da API; com os dois, o `TRUST_PROXY_HOPS` e o limite de tentativas ficariam mais frágeis | Passar a API pelo Cloudflare também |
+| 2026-10-31 | Segredos de produção enviados por script (`npm run fly:secrets`), que gera as chaves JWT e lê as URLs do Neon | Nenhum valor aparece na tela, no histórico do terminal ou na conversa | Copiar as URLs do painel do Neon e colar no `fly secrets set` |
 
 ### Matriz de papéis
 

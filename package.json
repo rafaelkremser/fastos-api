@@ -24,6 +24,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "gen:keys": "node scripts/generate-jwt-keys.mjs",
+    "fly:secrets": "node scripts/fly-secrets.mjs",
     "tenants:inactive": "node dist/infra/cli/tenants inactive",
     "tenants:activate": "node dist/infra/cli/tenants activate",
     "seed:dev": "node scripts/seed-dev.mjs"

@@ -1,0 +1,32 @@
+# The API on Fly.io, in São Paulo next to the Neon database. The secrets
+# (DATABASE_URL, DATABASE_URL_UNPOOLED, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY) go in
+# with scripts/fly-secrets.mjs; the steps are in docs/deploy.md
+app = "consertiva-api"
+primary_region = "gru"
+
+[deploy]
+  # Applies the pending migrations before the new version takes over. If they
+  # fail, the deploy stops and the running version stays
+  release_command = "npx prisma migrate deploy"
+
+[env]
+  # Fly's proxy is the only one in front of the API: api.consertiva.com.br is
+  # not proxied by Cloudflare. If it ever is, this becomes 2
+  TRUST_PROXY_HOPS = "1"
+  # The public site, for the sign-up, and every store
+  CORS_ORIGINS = "https://consertiva.com.br,https://*.consertiva.com.br"
+  # SWAGGER_ENABLED and TENANT_AUTO_APPROVAL stay unset: no /api/docs, and new
+  # stores wait for approval
+
+[http_service]
+  internal_port = 3333
+  force_https = true
+  # Stops when nobody uses it and starts again on the next request, a few
+  # seconds later. Once stores use it every day, set min_machines_running = 1
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

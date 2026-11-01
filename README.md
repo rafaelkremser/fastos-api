@@ -75,6 +75,10 @@ Para visualizar e gerenciar os dados do banco:
 npm run prisma:studio
 ```
 
+### Produção
+
+A API roda no Fly.io, em São Paulo, a partir do `Dockerfile` e do `fly.toml`. O passo a passo do deploy, dos segredos e da liberação de lojas está em [`docs/deploy.md`](docs/deploy.md).
+
 ## Estrutura dos Módulos
 
 ### 1. Auth
