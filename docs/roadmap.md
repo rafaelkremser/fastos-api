@@ -20,11 +20,11 @@ Plano para levar a API até a produção. É a referência única do que já foi
 |---|:-:|:-:|
 | P0: bloqueadores de deploy | 8 | 8 |
 | P1: quebra ou vaza em produção | 4 | 4 |
-| P2: operação | 1 | 7 |
+| P2: operação | 3 | 7 |
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** o P2-5 (testes de ponta a ponta contra o banco, com o isolamento entre lojas) e o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que começa quando a hospedagem for contratada. Seguem anotados no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que espera a conta no Fly.io. Seguem anotados no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -152,9 +152,29 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P2-2 | Logs estruturados (Pino), com um ID por requisição | Pendente |
 | P2-3 | `GET /health` para o host monitorar a API | Pendente |
 | P2-4 | Monitoramento de erros (Sentry) | Pendente |
-| P2-5 | Testes de ponta a ponta contra banco: cadastro e login, isolamento entre lojas, OS completa, papéis | Pendente |
-| P2-6 | Dockerfile e docker-compose de produção | Pendente |
+| P2-5 | Testes de ponta a ponta contra banco: cadastro e login, isolamento entre lojas, OS completa, papéis | Feito, em [`test/e2e`](../test/e2e) (detalhado abaixo) |
+| P2-6 | Dockerfile e docker-compose de produção | Feito: o `Dockerfile` veio com o deploy ([PR #22](https://github.com/rafaelkremser/fastos-api/pull/22)). Não há docker-compose de produção: o Fly roda a imagem e o banco é o Neon |
 | P2-7 | CI no GitHub Actions: build, testes, `prisma validate`, `npm audit --omit=dev` | Pendente |
+
+**P2-5: testes de ponta a ponta.** Feito.
+
+- **`npm run test:e2e`:**
+  - cria um branch temporário do Neon a partir do `dev` e aplica as migrations nele;
+  - roda os testes de `test/e2e`, cada arquivo com a API inteira (o `AppModule`, como o `main.ts` sobe), e cada teste com lojas novas;
+  - apaga o branch no fim. Se o script parar no meio, o branch expira em duas horas.
+- **O que é testado** (73 testes, uns 40 segundos):
+  - **cadastro e login:** cadastro, login, a renovação do token, senha errada, loja que não existe, endereço em uso, e a mesma pessoa dona de duas lojas, cada uma com a sua senha;
+  - **loja aguardando aprovação:** com `TENANT_AUTO_APPROVAL` desligado, o login responde 403 até a loja ser liberada;
+  - **isolamento entre lojas:**
+    - a loja A tenta ler, editar, apagar ou usar pelo ID cada coisa da loja B: cliente, aparelho, OS, item, histórico, aviso, técnico;
+    - são 18 tentativas, todas recusadas com 403 ou 404, e os registros da B continuam iguais;
+    - a lista de aparelhos de um cliente da B volta vazia, como para um cliente que não existe;
+    - as listas e as métricas da A só mostram o que é dela;
+  - **a OS completa:** numeração por loja, itens, desconto, técnico, os dois avisos, a entrega, o histórico e o faturamento no Início;
+  - **os papéis:** cada rota da matriz para dono, administrador, técnico e atendente, e o 401 sem sessão.
+- **Prova:** com a conferência de loja desligada de propósito na leitura da OS, o teste de isolamento falhou.
+- **Regra para rotas novas:** toda rota que recebe um ID entra na lista de `test/e2e/tenant-isolation.e2e-spec.ts`. Como o isolamento entre lojas é só da aplicação (sem RLS no banco), é esse teste que o compensa.
+- **Os testes não usam o `.env`:** eles exigem o banco temporário (sem ele, param na hora) e geram um par de chaves JWT próprio.
 
 ## P3: escala e LGPD
 
