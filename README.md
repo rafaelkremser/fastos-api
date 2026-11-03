@@ -197,6 +197,10 @@ O sistema utiliza a estratégia de **coluna `tenant_id`** em todas as tabelas pr
 # Rodar testes
 npm run test
 
+# Testes de ponta a ponta, contra um banco temporário do Neon (precisa do CLI
+# do Neon com login; detalhes no P2-5 do docs/roadmap.md)
+npm run test:e2e
+
 # Rodar em modo produção
 npm run build
 npm run start:prod
