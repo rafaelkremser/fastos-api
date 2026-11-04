@@ -11,8 +11,8 @@ export const USER_ROLES = [
 
 export type UserRole = (typeof USER_ROLES)[number]
 
-// Roles a user may give to a new teammate. Nobody creates a second owner,
-// and an admin cannot create other admins.
+// Roles a user may give to a teammate, when creating them or later. Nobody
+// creates a second owner, and an admin cannot create other admins.
 const ASSIGNABLE_ROLES: Record<UserRole, UserRole[]> = {
   OWNER: ['ADMIN', 'TECHNICIAN', 'RECEPTIONIST'],
   ADMIN: ['TECHNICIAN', 'RECEPTIONIST'],
@@ -100,6 +100,13 @@ export class User extends Entity<UserProps> {
 
   canAssignRole(role: UserRole) {
     return ASSIGNABLE_ROLES[this.role].includes(role)
+  }
+
+  // Changing a teammate's role or access: only someone who could have given
+  // them their role, so the owner is out of anyone's reach and an admin
+  // cannot touch another admin. Nobody changes their own, either
+  canManage(user: User) {
+    return !this.id.equals(user.id) && this.canAssignRole(user.role)
   }
 
   static create(

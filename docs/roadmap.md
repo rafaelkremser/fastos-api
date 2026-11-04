@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que espera a conta no Fly.io. Seguem anotados no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas), o A11 (trocar a própria senha) e o A12 (desativar usuário e mudar o papel). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que espera a conta no Fly.io. Seguem anotados no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas) e o A11 (trocar a própria senha). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -76,6 +76,15 @@ Plano para levar a API até a produção. É a referência única do que já foi
   - **A correção:** o campo saiu da validação e do caso de uso da edição, e um `technicianId` enviado é descartado. O técnico só muda pela rota de atribuição, que confere a loja e grava no histórico.
   - **Testes:** o caso de uso da edição ganhou testes (mantém o técnico, recusa OS de outra loja, avisa quando a OS não existe). Um teste da rota confere que o `technicianId` do corpo não chega ao caso de uso; com o campo de volta na validação, ele falha.
   - **Efeito colateral:** tirar o técnico de uma OS deixou de ser possível. O frontend não oferece isso; se precisar, a rota de atribuição passa a aceitar "nenhum", com registro no histórico.
+- A12, pedido do frontend: tirar alguém da equipe e mudar o papel.
+  - **Rotas:** `PATCH /users/:id/active` (`{ isActive }`) e `PATCH /users/:id/role` (`{ role }`), só para dono e administrador.
+  - **Quem mexe em quem:** a mesma regra da criação de usuários. O dono mexe em administradores, técnicos e atendentes; o administrador, só em técnicos e atendentes, e não promove ninguém a administrador. Ninguém mexe no dono nem em si mesmo, para a loja não ficar sem quem a administre.
+  - **Efeito:** quem é desativado não entra mais e tem a renovação do token recusada. O papel novo chega na próxima renovação. As duas coisas valem em até 15 minutos, o tempo do token de acesso. As OS e o histórico da pessoa ficam como estavam, e ela deixa de poder receber OS novas (a atribuição recusa quem está desativado).
+  - **Testes:**
+    - os casos de uso cobrem cada combinação de papéis;
+    - nos de ponta a ponta, uma pessoa desativada não entra, não renova o token e não recebe OS, e volta a entrar depois de reativada;
+    - o papel novo vale na próxima renovação;
+    - as duas rotas entraram no teste de isolamento entre lojas.
 
 **A4 e A13: métricas.** Feito.
 - **`GET /metrics/operations`,** para todos os papéis: OS por status (todos os status, os vazios com zero), em andamento (de "Aberta" a "Aguardando peças", `ACTIVE_STATUSES`), atrasadas (em andamento com a previsão antes de hoje), prontas para retirada e esperando aviso.
@@ -214,6 +223,7 @@ Hoje os primeiros clientes entram por contrato, com a loja liberada à mão. Est
 Limitações aceitas de propósito, para resolver quando fizer sentido:
 
 - **O técnico vê todas as OS da loja,** não só as atribuídas a ele. Isso é um filtro por dono do registro, não por papel.
+- **Desativar alguém ou mudar o papel leva até 15 minutos para valer:** o token de acesso que a pessoa já tem continua valendo até vencer, e só a renovação confere o banco. Para valer na hora, cada requisição teria de consultar o usuário no banco.
 - **Não há regra por status:** qualquer papel pode levar a OS para qualquer status.
 - **Atribuir técnico aceita qualquer usuário da loja,** inclusive um atendente.
 - **O papel vem do token de acesso:** uma mudança de papel leva até 15 minutos para valer, o tempo de o token vencer e ser renovado. A exceção é a criação de usuários, que lê o papel do banco na hora.
@@ -325,6 +335,7 @@ Cada item abaixo é marcado quando o deploy acontecer.
 | OS: atribuir técnico | ✓ | ✓ | | |
 | Ver a equipe da loja (lista de usuários) | ✓ | ✓ | ✓ | ✓ |
 | Criar usuários | ✓ | ✓ (só técnico e atendente) | | |
+| Desativar, reativar e mudar o papel de alguém (nunca o dono nem a si mesmo) | ✓ | ✓ (só técnico e atendente) | | |
 | Ver os números da operação (OS por status, atrasadas, avisos) | ✓ | ✓ | ✓ | ✓ |
 | Ver o faturamento | ✓ | ✓ | | |
 | Ver os números por técnico e o tempo em cada etapa | ✓ | ✓ | | |
