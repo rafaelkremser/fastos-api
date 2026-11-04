@@ -163,6 +163,18 @@ describe('Isolation between stores', () => {
         { channel: 'PHONE' },
       ],
     ],
+    [
+      "change a teammate's role",
+      (r) => [
+        'patch',
+        `/users/${r.technicianId}/role`,
+        { role: 'RECEPTIONIST' },
+      ],
+    ],
+    [
+      'deactivate a teammate',
+      (r) => ['patch', `/users/${r.technicianId}/active`, { isActive: false }],
+    ],
   ]
 
   it.each(attempts)('should not let another store %s', async (_, attempt) => {
@@ -206,8 +218,12 @@ describe('Isolation between stores', () => {
         .get(`/service-orders/${records.serviceOrderId}/history`)
         .expect(200)
     ).body
+    const { users } = (await storeB.as.get('/users').expect(200)).body
 
     expect(customer.name).not.toBe('Outro nome')
+    expect(
+      users.find((u: { id: string }) => u.id === records.technicianId),
+    ).toMatchObject({ role: 'TECHNICIAN', isActive: true })
     expect(device.type).toBe('SMARTPHONE')
     expect(devices).toHaveLength(1)
     expect(serviceOrder).toMatchObject({

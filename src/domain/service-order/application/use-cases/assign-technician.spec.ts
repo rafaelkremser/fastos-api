@@ -101,4 +101,22 @@ describe('Assign Technician', () => {
     expect(result.value).toBeInstanceOf(ResourceNotFoundError)
     expect(transactionManager.runs).toBe(0)
   })
+
+  it('should not assign someone who was deactivated', async () => {
+    const serviceOrder = makeServiceOrder({ tenantId })
+    const formerTechnician = makeUser({
+      tenantId,
+      role: 'TECHNICIAN',
+      isActive: false,
+    })
+    serviceOrdersRepository.items.push(serviceOrder)
+    usersRepository.items.push(formerTechnician)
+
+    const result = await sut.execute(
+      request(serviceOrder.id, formerTechnician.id),
+    )
+
+    expect(result.value).toBeInstanceOf(ResourceNotFoundError)
+    expect(serviceOrdersRepository.items[0].technicianId).toBeNull()
+  })
 })

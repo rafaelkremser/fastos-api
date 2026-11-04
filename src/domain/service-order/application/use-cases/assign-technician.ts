@@ -50,7 +50,12 @@ export class AssignTechnicianUseCase {
 
     const technician = await this.usersRepository.findById(technicianId)
 
-    if (!technician || technician.tenantId.toString() !== tenantId) {
+    // Someone deactivated left the team and takes no new orders
+    if (
+      !technician ||
+      !technician.isActive ||
+      technician.tenantId.toString() !== tenantId
+    ) {
       return left(new ResourceNotFoundError())
     }
 
