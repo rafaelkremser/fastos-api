@@ -27,6 +27,7 @@
     "fly:secrets": "node scripts/fly-secrets.mjs",
     "tenants:inactive": "node dist/infra/cli/tenants inactive",
     "tenants:activate": "node dist/infra/cli/tenants activate",
+    "users:reset-password": "node dist/infra/cli/users reset-password",
     "seed:dev": "node scripts/seed-dev.mjs"
   },
   "dependencies": {

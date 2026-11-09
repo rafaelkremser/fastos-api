@@ -13,6 +13,7 @@ import { GetUserController } from './controllers/get-user.controller'
 import { FetchUsersController } from './controllers/fetch-users.controller'
 import { ChangeUserRoleController } from './controllers/change-user-role.controller'
 import { SetUserActiveController } from './controllers/set-user-active.controller'
+import { ChangePasswordController } from './controllers/change-password.controller'
 import { GetTenantController } from './controllers/get-tenant.controller'
 
 // Customer Controllers
@@ -53,6 +54,7 @@ import { CreateUserUseCase } from '@/domain/account/application/use-cases/create
 import { FetchUsersUseCase } from '@/domain/account/application/use-cases/fetch-users'
 import { ChangeUserRoleUseCase } from '@/domain/account/application/use-cases/change-user-role'
 import { SetUserActiveUseCase } from '@/domain/account/application/use-cases/set-user-active'
+import { ChangePasswordUseCase } from '@/domain/account/application/use-cases/change-password'
 import { GetUserUseCase } from '@/domain/account/application/use-cases/get-user'
 import { GetTenantUseCase } from '@/domain/account/application/use-cases/get-tenant'
 
@@ -102,6 +104,7 @@ import { GetStageTimesUseCase } from '@/domain/service-order/application/use-cas
     FetchUsersController,
     ChangeUserRoleController,
     SetUserActiveController,
+    ChangePasswordController,
     GetTenantController,
     // Customer
     CreateCustomerController,
@@ -141,6 +144,7 @@ import { GetStageTimesUseCase } from '@/domain/service-order/application/use-cas
     FetchUsersUseCase,
     ChangeUserRoleUseCase,
     SetUserActiveUseCase,
+    ChangePasswordUseCase,
     GetUserUseCase,
     GetTenantUseCase,
     // Customer Use Cases
