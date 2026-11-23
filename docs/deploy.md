@@ -67,6 +67,10 @@ As lojas nascem aguardando aprovação.
 - **Ver as pendentes:** `fly ssh console -C "node /app/dist/infra/cli/tenants inactive"`.
 - **Liberar uma:** o mesmo comando com `activate <endereço>`.
 
+## Senha esquecida
+
+`fly ssh console -C "node /app/dist/infra/cli/users reset-password <endereço> <e-mail>"` gera uma senha temporária e mostra na tela. Passe a senha à pessoa por um canal seguro (de preferência, ligando para ela) e peça para trocar em "Trocar senha", no menu da conta.
+
 ## Custos (outubro de 2026)
 
 - **Fly.io:** uma máquina `shared-cpu-1x` com 512 MB, que custa poucos dólares por mês e para sozinha quando ninguém usa (`auto_stop_machines`). Quando as lojas usarem todo dia, mude `min_machines_running` para 1 no `fly.toml`, para ninguém esperar a máquina ligar.
