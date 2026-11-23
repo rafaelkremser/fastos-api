@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
+import { normalizeEmail } from '../../enterprise/entities/normalize-email'
 import { TenantsRepository } from '../repositories/tenants-repository'
 import { UsersRepository } from '../repositories/users-repository'
 import { Hasher } from '../cryptography/hasher'
@@ -42,7 +43,10 @@ export class AuthenticateUserUseCase {
     const tenant = await this.tenantsRepository.findBySlug(tenantSlug)
 
     const user = tenant
-      ? await this.usersRepository.findByEmail(tenant.id.toString(), email)
+      ? await this.usersRepository.findByEmail(
+          tenant.id.toString(),
+          normalizeEmail(email),
+        )
       : null
 
     // Checked even without a user, so the response time does not reveal

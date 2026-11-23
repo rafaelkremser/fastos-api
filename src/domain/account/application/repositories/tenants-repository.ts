@@ -2,6 +2,7 @@ import { Tenant } from '../../enterprise/entities/tenant'
 
 export abstract class TenantsRepository {
   abstract findById(id: string): Promise<Tenant | null>
+  // The e-mail as stored, already passed through normalizeEmail
   abstract findByEmail(email: string): Promise<Tenant | null>
   abstract findBySlug(slug: string): Promise<Tenant | null>
   // Oldest first, so tenants waiting for approval are seen in order

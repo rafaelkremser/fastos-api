@@ -1,6 +1,7 @@
 import { Entity } from '@/core/entities/entity'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
+import { normalizeEmail } from './normalize-email'
 
 export const USER_ROLES = [
   'OWNER',
@@ -74,7 +75,7 @@ export class User extends Entity<UserProps> {
   }
 
   set email(email: string) {
-    this.props.email = email
+    this.props.email = normalizeEmail(email)
     this.touch()
   }
 
@@ -116,6 +117,7 @@ export class User extends Entity<UserProps> {
     return new User(
       {
         ...props,
+        email: normalizeEmail(props.email),
         role: props.role ?? 'TECHNICIAN',
         isActive: props.isActive ?? true,
         createdAt: props.createdAt ?? new Date(),

@@ -38,6 +38,22 @@ describe('Reset Password', () => {
     expect(user.password).toBe('temporaria-hashed')
   })
 
+  it('should find the person whatever the case of the e-mail', async () => {
+    const tenant = makeTenant({ slug: Slug.create('loja-a') })
+    const user = makeUser({ tenantId: tenant.id, email: 'ana@loja.com' })
+    tenantsRepository.items.push(tenant)
+    usersRepository.items.push(user)
+
+    const result = await sut.execute({
+      tenantSlug: 'loja-a',
+      email: 'Ana@Loja.com',
+      newPassword: 'temporaria',
+    })
+
+    expect(result.isRight()).toBe(true)
+    expect(user.password).toBe('temporaria-hashed')
+  })
+
   it('should only find the person in the store given', async () => {
     const storeA = makeTenant({ slug: Slug.create('loja-a') })
     const storeB = makeTenant({ slug: Slug.create('loja-b') })

@@ -65,6 +65,26 @@ describe('Authenticate User', () => {
     }
   })
 
+  it('should authenticate whatever the case of the e-mail', async () => {
+    const tenant = makeTenant({ slug: Slug.create('loja-a') })
+    tenantsRepository.items.push(tenant)
+    usersRepository.items.push(
+      makeUser({
+        tenantId: tenant.id,
+        email: 'john@example.com',
+        password: '123456-hashed',
+      }),
+    )
+
+    const result = await sut.execute({
+      tenantSlug: 'loja-a',
+      email: ' John@Example.COM ',
+      password: '123456',
+    })
+
+    expect(result.isRight()).toBe(true)
+  })
+
   it('should log into the right tenant when the same email exists in two tenants', async () => {
     const tenantA = makeTenant({ slug: Slug.create('loja-a') })
     const tenantB = makeTenant({ slug: Slug.create('loja-b') })

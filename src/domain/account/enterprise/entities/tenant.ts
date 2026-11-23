@@ -1,6 +1,7 @@
 import { Entity } from '@/core/entities/entity'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { Optional } from '@/core/types/optional'
+import { normalizeEmail } from './normalize-email'
 import { Slug } from './value-objects/slug'
 
 export interface TenantProps {
@@ -57,7 +58,7 @@ export class Tenant extends Entity<TenantProps> {
   }
 
   set email(email: string) {
-    this.props.email = email
+    this.props.email = normalizeEmail(email)
     this.touch()
   }
 
@@ -88,6 +89,7 @@ export class Tenant extends Entity<TenantProps> {
     return new Tenant(
       {
         ...props,
+        email: normalizeEmail(props.email),
         isActive: props.isActive ?? true,
         createdAt: props.createdAt ?? new Date(),
       },

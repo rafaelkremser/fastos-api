@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
 import { TransactionManager } from '@/core/transactions/transaction-manager'
+import { normalizeEmail } from '../../enterprise/entities/normalize-email'
 import { Tenant } from '../../enterprise/entities/tenant'
 import { User } from '../../enterprise/entities/user'
 import { Slug } from '../../enterprise/entities/value-objects/slug'
@@ -54,11 +55,14 @@ export class RegisterTenantUseCase {
     ownerPassword,
     autoApprove = false,
   }: RegisterTenantUseCaseRequest): Promise<RegisterTenantUseCaseResponse> {
-    const tenantWithSameEmail =
-      await this.tenantsRepository.findByEmail(tenantEmail)
+    const normalizedTenantEmail = normalizeEmail(tenantEmail)
+
+    const tenantWithSameEmail = await this.tenantsRepository.findByEmail(
+      normalizedTenantEmail,
+    )
 
     if (tenantWithSameEmail) {
-      return left(new TenantAlreadyExistsError(tenantEmail))
+      return left(new TenantAlreadyExistsError(normalizedTenantEmail))
     }
 
     const slug = tenantSlug
@@ -80,7 +84,7 @@ export class RegisterTenantUseCase {
     const tenant = Tenant.create({
       name: tenantName,
       slug,
-      email: tenantEmail,
+      email: normalizedTenantEmail,
       document: tenantDocument ?? null,
       phone: tenantPhone ?? null,
       isActive: autoApprove,

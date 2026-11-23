@@ -2,7 +2,7 @@
 
 Plano para levar a API até a produção. É a referência única do que já foi feito, do que vem a seguir e por quê.
 
-**Última atualização:** 2026-10-31
+**Última atualização:** 2026-11-23
 
 ## Como usar este documento
 
@@ -24,7 +24,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
 | P3: escala e LGPD | 0 | 5 |
 | Assinatura | 0 | 6 |
 
-**Próximo:** o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que espera a conta no Fly.io. Segue anotado no roadmap do frontend o A10 (e-mail sem diferença de maiúsculas). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
+**Próximo:** o primeiro deploy (F7 no roadmap do frontend, com o checklist abaixo), que espera a conta no Fly.io. Antes do primeiro cliente, ainda o P2-3 (rota de saúde) e o P2-4 (monitoramento de erros). Os pedidos do frontend à API ficam no roadmap do `fastos-web`, e cada um vira um PR aqui.
 
 ## P0: bloqueadores de deploy
 
@@ -85,7 +85,7 @@ Plano para levar a API até a produção. É a referência única do que já foi
     - nos de ponta a ponta, uma pessoa desativada não entra, não renova o token e não recebe OS, e volta a entrar depois de reativada;
     - o papel novo vale na próxima renovação;
     - as duas rotas entraram no teste de isolamento entre lojas.
-- A11, pedido do frontend: trocar a própria senha, e redefinir a de quem esqueceu.
+- A11, pedido do frontend: trocar a própria senha, e redefinir a de quem esqueceu ([PR #26](https://github.com/rafaelkremser/fastos-api/pull/26)).
   - **`PATCH /user/password`** (`{ currentPassword, newPassword }`), para todos os papéis.
     - A pessoa prova que sabe a senha atual; a nova tem pelo menos 6 caracteres, como na criação.
     - Senha atual errada responde 403, e não 401: para o frontend, 401 é token vencido, que ele renovaria e tentaria de novo.
@@ -95,6 +95,18 @@ Plano para levar a API até a produção. É a referência única do que já foi
     - unitários da troca e da redefinição;
     - nos de ponta a ponta: senha atual errada (403), senha curta (400), e a antiga parando de valer;
     - contra um banco temporário: a troca pela tela do frontend, e o comando de redefinir, com login usando a senha temporária.
+- A10, pedido do frontend: o e-mail não diferencia maiúsculas e minúsculas (branch `feat/email-case`).
+  - **Antes:** "Ana@loja.com" e "ana@loja.com" eram duas contas diferentes, e o login só entrava com o e-mail escrito igual ao cadastro.
+  - **Agora:** o e-mail é guardado e procurado em minúsculas e sem espaços nas pontas (`normalizeEmail`). Vale para o cadastro da loja (o e-mail dela e o do dono), a criação de usuário, o login e o comando de redefinir senha.
+  - **No banco:**
+    - a migration `normalize_emails` converte os e-mails que já existem;
+    - se houver duas contas que só diferem nas maiúsculas, ela para antes de mudar qualquer coisa e mostra os ids, para alguém decidir qual fica. Em 2026-11-23 não havia nenhum e-mail com maiúsculas, nem no `dev` (36 usuários e 18 lojas) nem no `production` (vazio);
+    - uma restrição (`CHECK`) recusa e-mail fora do padrão, para uma gravação futura que esqueça de normalizar dar erro em vez de criar uma segunda conta para a mesma pessoa.
+  - **Testes:**
+    - unitários: login, criação de usuário, cadastro e redefinição com o e-mail escrito de outro jeito. Sem a normalização, os de login e de criação falham;
+    - de ponta a ponta: cadastro com maiúsculas guardado em minúsculas, login com outra combinação, e 409 para a loja e para o colega repetidos com outra caixa;
+    - ensaio da migration num branch temporário do `dev`, com e-mails misturados e um par repetido: parou mostrando os dois ids; sem o par, converteu tudo; o banco recusou um e-mail novo com maiúsculas; e o `prisma migrate diff` não viu diferença para o schema;
+    - os testes de ponta a ponta também numa cópia do `production`, onde as cinco migrations pendentes aplicaram sem erro.
 
 **A4 e A13: métricas.** Feito.
 - **`GET /metrics/operations`,** para todos os papéis: OS por status (todos os status, os vazios com zero), em andamento (de "Aberta" a "Aguardando peças", `ACTIVE_STATUSES`), atrasadas (em andamento com a previsão antes de hoje), prontas para retirada e esperando aviso.
@@ -293,6 +305,7 @@ Cada item abaixo é marcado quando o deploy acontecer.
 | 2026-09-15 | Cada loja tem um subdomínio próprio (`loja.fastos.com`) | Separar lojas que têm usuários com o mesmo e-mail | E-mail único no sistema; escolher a loja numa lista no login |
 | 2026-10-14 | O frontend envia o `tenantSlug` no corpo do login | A API não depende do endereço em que roda e fica fácil de testar | API descobrir a loja pelo endereço acessado |
 | 2026-10-14 | O mesmo e-mail pode existir em várias lojas | Um técnico pode trabalhar em duas lojas | E-mail único no sistema |
+| 2026-11-23 | E-mail guardado em minúsculas, com uma restrição no banco que recusa outra forma | Comparar sem converter exigiria lembrar de cada consulta; guardado já convertido, a comparação é a de sempre e usa os índices de unicidade que já existem | Coluna `citext`, que pede uma extensão do Postgres e guarda o e-mail como foi digitado; índice em `lower(email)`, que o Prisma não descreve no schema |
 | 2026-10-14 | Slug escolhido no cadastro; se vazio, gerado do nome. Não muda depois | Dono escolhe o endereço, com uma sugestão pronta | Sempre gerado do nome |
 | 2026-09-15 | Isolamento entre lojas só na aplicação, compensado por papéis e testes de isolamento | Rapidez para o MVP | Row-Level Security no Postgres (reavaliar com clientes pagantes) |
 | 2026-09-15 | Refresh token sem guardar no banco | Simplicidade | Persistido no banco; com rotação (P3-1) |

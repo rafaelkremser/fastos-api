@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { Either, left, right } from '@/core/either'
 import { UniqueEntityID } from '@/core/entities/unique-entity-id'
 import { NotAllowedError } from '@/core/errors/not-allowed-error'
+import { normalizeEmail } from '../../enterprise/entities/normalize-email'
 import { User, UserRole } from '../../enterprise/entities/user'
 import { UsersRepository } from '../repositories/users-repository'
 import { Hasher } from '../cryptography/hasher'
@@ -50,13 +51,15 @@ export class CreateUserUseCase {
       return left(new NotAllowedError())
     }
 
+    const normalizedEmail = normalizeEmail(email)
+
     const userWithSameEmail = await this.usersRepository.findByEmail(
       tenantId,
-      email,
+      normalizedEmail,
     )
 
     if (userWithSameEmail) {
-      return left(new UserAlreadyExistsError(email))
+      return left(new UserAlreadyExistsError(normalizedEmail))
     }
 
     const hashedPassword = await this.hasher.hash(password)
@@ -64,7 +67,7 @@ export class CreateUserUseCase {
     const user = User.create({
       tenantId: new UniqueEntityID(tenantId),
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       role,
     })

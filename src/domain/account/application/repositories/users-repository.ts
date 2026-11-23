@@ -6,6 +6,7 @@ export interface UserFilters {
 
 export abstract class UsersRepository {
   abstract findById(id: string): Promise<User | null>
+  // The e-mail as stored, already passed through normalizeEmail
   abstract findByEmail(tenantId: string, email: string): Promise<User | null>
   // Sorted by name; a store's team is small enough to come in one page
   abstract findManyByTenantId(

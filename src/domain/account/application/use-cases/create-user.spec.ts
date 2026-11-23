@@ -113,6 +113,32 @@ describe('Create User', () => {
     expect(result.value).toBeInstanceOf(UserAlreadyExistsError)
   })
 
+  it("should not create a user whose e-mail differs from a teammate's only in case", async () => {
+    const creator = addCreator('OWNER')
+    usersRepository.items.push(
+      makeUser({ tenantId, email: 'teammate@example.com' }),
+    )
+
+    const result = await sut.execute({
+      ...request(creator.id, 'TECHNICIAN'),
+      email: 'TeamMate@Example.com',
+    })
+
+    expect(result.value).toBeInstanceOf(UserAlreadyExistsError)
+    expect(usersRepository.items).toHaveLength(2)
+  })
+
+  it('should keep the e-mail in lowercase', async () => {
+    const creator = addCreator('OWNER')
+
+    await sut.execute({
+      ...request(creator.id, 'TECHNICIAN'),
+      email: 'TeamMate@Example.com',
+    })
+
+    expect(usersRepository.items[1].email).toBe('teammate@example.com')
+  })
+
   it('should allow an email that exists in another tenant', async () => {
     const creator = addCreator('OWNER')
     usersRepository.items.push(

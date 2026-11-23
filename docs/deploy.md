@@ -24,7 +24,7 @@ Na pasta da API:
 
 1. **Criar o app:** `fly apps create consertiva-api`. Se o nome estiver ocupado, troque o `app` no `fly.toml` e o CNAME do DNS abaixo.
 2. **Segredos:** `npm run fly:secrets`. O script gera um par de chaves JWT só para produção e lê as URLs do branch `production` com o CLI do Neon. Os valores vão direto para o Fly, sem aparecer na tela. Confira os nomes com `fly secrets list`.
-3. **Ensaio das migrations,** se houver migration nova desde o último ensaio. Crie um branch temporário do Neon a partir do `production`, aplique as migrations nele (`npx prisma migrate deploy`, com as URLs só em variáveis de ambiente) e apague o branch. O ensaio de 2026-10-31 aplicou as migrations que faltavam (aviso ao cliente e índice dos itens) numa cópia do `production` sem erro.
+3. **Ensaio das migrations,** se houver migration nova desde o último ensaio. Crie um branch temporário do Neon a partir do `production`, aplique as migrations nele (`npx prisma migrate deploy`, com as URLs só em variáveis de ambiente) e apague o branch. O de 2026-11-23 aplicou numa cópia do `production` as cinco que faltam lá, até a dos e-mails (`normalize_emails`), e os testes de ponta a ponta passaram nessa cópia (`E2E_NEON_PARENT=production npm run test:e2e`).
 4. **Deploy:** `fly deploy`. O Fly monta a imagem do `Dockerfile` e roda `prisma migrate deploy` (o `release_command`). Só se as migrations passarem é que ele sobe a versão nova.
 5. **Certificado:** `fly certs add api.consertiva.com.br`. O Fly confirma quando o DNS abaixo estiver certo.
 

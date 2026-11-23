@@ -110,6 +110,31 @@ describe('Register Tenant', () => {
     expect(result.value).toBeInstanceOf(TenantAlreadyExistsError)
   })
 
+  it('should reject a tenant e-mail already in use with another case', async () => {
+    tenantsRepository.items.push(
+      makeTenant({ email: 'contato@assistenciatech.com' }),
+    )
+
+    const result = await sut.execute({
+      ...request,
+      tenantEmail: 'Contato@AssistenciaTech.com',
+    })
+
+    expect(result.value).toBeInstanceOf(TenantAlreadyExistsError)
+    expect(tenantsRepository.items).toHaveLength(1)
+  })
+
+  it('should keep the e-mails of the tenant and its owner in lowercase', async () => {
+    await sut.execute({
+      ...request,
+      tenantEmail: 'Contato@AssistenciaTech.com',
+      ownerEmail: 'John@Example.com',
+    })
+
+    expect(tenantsRepository.items[0].email).toBe('contato@assistenciatech.com')
+    expect(usersRepository.items[0].email).toBe('john@example.com')
+  })
+
   it('should allow an owner email that already exists in another tenant', async () => {
     const otherTenant = makeTenant()
     tenantsRepository.items.push(otherTenant)

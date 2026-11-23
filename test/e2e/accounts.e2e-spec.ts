@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common'
 import { createApp } from './app'
-import { authed, http, signIn, signUp } from './api'
+import { authed, http, signIn, signUp, uniqueId } from './api'
 
 describe('Sign-up and sign-in', () => {
   let app: INestApplication
@@ -69,6 +69,49 @@ describe('Sign-up and sign-in', () => {
         ownerEmail: `outra-${store.slug}@consertiva.test`,
         ownerPassword: 'senha-forte',
       })
+      .expect(409)
+  })
+
+  it('should take an e-mail typed in any case as the same', async () => {
+    const id = uniqueId()
+    const store = await signUp(app, {
+      tenantEmail: `Loja-${id}@Consertiva.test`,
+      ownerEmail: `Dona-${id}@Consertiva.test`,
+    })
+
+    expect(store.tenant.email).toBe(`loja-${id}@consertiva.test`)
+    expect(store.user.email).toBe(`dona-${id}@consertiva.test`)
+
+    const { accessToken } = await signIn(app, store.slug, {
+      email: `DONA-${id}@consertiva.TEST`,
+      password: store.owner.password,
+    })
+
+    await http(app)
+      .post('/accounts')
+      .send({
+        tenantName: `Outra ${id}`,
+        tenantSlug: `outra-${id}`,
+        tenantEmail: `LOJA-${id}@consertiva.test`,
+        ownerName: 'Outra pessoa',
+        ownerEmail: `outra-${id}@consertiva.test`,
+        ownerPassword: 'senha-forte',
+      })
+      .expect(409)
+
+    const owner = authed(app, accessToken)
+    const teammate = {
+      name: 'Técnico',
+      password: 'senha-forte',
+      role: 'TECHNICIAN',
+    }
+    await owner
+      .post('/users')
+      .send({ ...teammate, email: `tecnico-${id}@consertiva.test` })
+      .expect(201)
+    await owner
+      .post('/users')
+      .send({ ...teammate, email: `Tecnico-${id}@Consertiva.test` })
       .expect(409)
   })
 
